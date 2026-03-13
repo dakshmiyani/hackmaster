@@ -1,18 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { QrCode, UserCheck, Utensils, ShieldCheck, ArrowLeft, Loader2, Camera } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { mockVolunteerStats } from '../data/mockData';
 import { Scanner } from "@yudiel/react-qr-scanner";
+import { getScanStats, getMembersByEvent, submitQrScan, assignQr } from '../utils/api';
+
+const EVENT_ID = import.meta.env.VITE_EVENT_ID || 1;
 
 const VolunteerPage = () => {
-    const [view, setView] = useState('dashboard'); // 'dashboard' or 'scanner'
+    const [view, setView] = useState('dashboard'); // 'dashboard' | 'scanner' | 'selectParticipant'
     const [scanAction, setScanAction] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isScanning, setIsScanning] = useState(false);
+    const [volunteerStats, setVolunteerStats] = useState({ checkIn: 0, lunch: 0, dinner: 0, totalParticipants: 0 });
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 1000);
-        return () => clearTimeout(timer);
+        const fetchStats = async () => {
+            setIsLoading(true);
+            try {
+                const [checkIn, lunch, dinner, members] = await Promise.all([
+                    getScanStats({ event_id: EVENT_ID, type: "check-in" }),
+                    getScanStats({ event_id: EVENT_ID, type: "lunch" }),
+                    getScanStats({ event_id: EVENT_ID, type: "dinner" }),
+                    getMembersByEvent(EVENT_ID),
+                ]);
+                setVolunteerStats({
+                    checkIn: checkIn?.count || 0,
+                    lunch: lunch?.count || 0,
+                    dinner: dinner?.count || 0,
+                    totalParticipants: Array.isArray(members) ? members.length : 0,
+                });
+                setParticipants(
+                    (Array.isArray(members) ? members : []).map((m) => ({
+                        id: m.member_id,
+                        name: m.name,
+                        email: m.email,
+                        domain: m.event_name || "General",
+                    }))
+                );
+            } catch (err) {
+                console.error("VolunteerPage stats error:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchStats();
     }, []);
 
     const actions = [
@@ -26,7 +57,6 @@ const VolunteerPage = () => {
 
     const startScan = (action) => {
         setScanAction(action);
-
         if (action.id === "assign") {
             setView("selectParticipant");
         } else {
@@ -43,18 +73,10 @@ const VolunteerPage = () => {
         }, 1500);
     };
 
+    const [participants, setParticipants] = useState([]);
     const [selectedParticipant, setSelectedParticipant] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedDomain, setSelectedDomain] = useState('ALL');
-
-    const participants = [
-        { id: 1, name: "Rahul Sharma", email: "rahul@gmail.com", domain: "WEB" },
-        { id: 2, name: "Amit Patel", email: "amit@gmail.com", domain: "AI/ML" },
-        { id: 3, name: "Priya Singh", email: "priya@gmail.com", domain: "WEB" },
-        { id: 4, name: "Neha Verma", email: "neha@gmail.com", domain: "AI/ML" },
-        { id: 5, name: "Suresh Pillai", email: "suresh@gmail.com", domain: "WEB" },
-        { id: 6, name: "Ananya Iyer", email: "ananya@gmail.com", domain: "AI/ML" }
-    ];
 
     const filteredParticipants = participants.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -118,7 +140,7 @@ const VolunteerPage = () => {
                         <div className="bg-[#111] border border-red-900/40 p-6 rounded-2xl shadow-xl relative overflow-hidden group">
                             <div className="relative z-10">
                                 <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Check-Ins</p>
-                                <h3 className="text-3xl font-black text-white">{mockVolunteerStats.checkIn} <span className="text-gray-600 text-sm">/ {mockVolunteerStats.totalParticipants}</span></h3>
+                                <h3 className="text-3xl font-black text-white">{volunteerStats.checkIn} <span className="text-gray-600 text-sm">/ {volunteerStats.totalParticipants}</span></h3>
                             </div>
                             <div className="absolute -bottom-4 -right-4 text-red-600/5 group-hover:scale-110 transition-transform">
                                 <UserCheck size={120} />
@@ -127,7 +149,7 @@ const VolunteerPage = () => {
                         <div className="bg-[#111] border border-red-900/40 p-6 rounded-2xl shadow-xl relative overflow-hidden group">
                             <div className="relative z-10">
                                 <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Lunch Served</p>
-                                <h3 className="text-3xl font-black text-white">{mockVolunteerStats.meals.lunch} <span className="text-gray-600 text-sm">/ {mockVolunteerStats.checkIn}</span></h3>
+                                <h3 className="text-3xl font-black text-white">{volunteerStats.lunch} <span className="text-gray-600 text-sm">/ {volunteerStats.checkIn}</span></h3>
                             </div>
                             <div className="absolute -bottom-4 -right-4 text-amber-600/5 group-hover:scale-110 transition-transform">
                                 <Utensils size={120} />
@@ -136,7 +158,7 @@ const VolunteerPage = () => {
                         <div className="bg-[#111] border border-red-900/40 p-6 rounded-2xl shadow-xl relative overflow-hidden group">
                             <div className="relative z-10">
                                 <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Total Impact</p>
-                                <h3 className="text-3xl font-black text-white">{(mockVolunteerStats.checkIn / mockVolunteerStats.totalParticipants * 100).toFixed(0)}%</h3>
+                                <h3 className="text-3xl font-black text-white">{volunteerStats.totalParticipants > 0 ? (volunteerStats.checkIn / volunteerStats.totalParticipants * 100).toFixed(0) : 0}%</h3>
                             </div>
                             <div className="absolute -bottom-4 -right-4 text-emerald-600/5 group-hover:scale-110 transition-transform">
                                 <ShieldCheck size={120} />

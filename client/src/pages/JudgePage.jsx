@@ -2,33 +2,67 @@ import React, { useState, useEffect } from 'react';
 import { IoSearchOutline, IoCheckmarkCircle } from "react-icons/io5";
 import { Gavel, Trophy, LayoutGrid, List } from 'lucide-react';
 import MarkingForm from '../components/dashboard/MarkingForm';
-import { mockJudgeTeams } from '../data/mockData';
+import { getTeamsByEvent, getCriteriaByEvent, submitScore, getLeaderboard } from '../utils/api';
+import { toast } from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
+
+const EVENT_ID = import.meta.env.VITE_EVENT_ID || 1;
 
 const JudgePage = () => {
-    const [selectedEvent, setSelectedEvent] = useState('WEB');
+    const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [teams, setTeams] = useState([]);
+    const [criteria, setCriteria] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [evaluatedTeams, setEvaluatedTeams] = useState({});
 
     useEffect(() => {
-        setIsLoading(true);
-        const timer = setTimeout(() => {
-            setTeams(mockJudgeTeams[selectedEvent] || []);
-            setIsLoading(false);
-        }, 1500);
-        return () => clearTimeout(timer);
-    }, [selectedEvent]);
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [teamsRaw, criteriaRaw] = await Promise.all([
+                    getTeamsByEvent(EVENT_ID),
+                    getCriteriaByEvent(EVENT_ID),
+                ]);
+                const normalized = (Array.isArray(teamsRaw) ? teamsRaw : []).map((t) => ({
+                    teamId: String(t.team_id),
+                    teamName: t.name,
+                    members: t.members || [],
+                }));
+                setTeams(normalized);
+                setCriteria(Array.isArray(criteriaRaw) ? criteriaRaw : []);
+            } catch (err) {
+                console.error("JudgePage fetch error:", err);
+                toast.error("Failed to load teams/criteria");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
-    const filteredTeams = teams.filter(team =>
-        team.teamName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        team.teamId.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const handleSaveMarks = ({ teamId, totalScore }) => {
-        setEvaluatedTeams(prev => ({ ...prev, [teamId]: totalScore }));
+    const handleSaveMarks = async ({ teamId, scores }) => {
+        try {
+            // scores is an array of { criteria_id, score }
+            await Promise.all(
+                scores.map((s) =>
+                    submitScore({
+                        judge_id: user?.user_id,
+                        team_id: Number(teamId),
+                        criteria_id: s.criteria_id,
+                        total_score: s.score,
+                    })
+                )
+            );
+            const total = scores.reduce((sum, s) => sum + Number(s.score), 0);
+            setEvaluatedTeams((prev) => ({ ...prev, [teamId]: total }));
+            toast.success("Scores submitted successfully!");
+        } catch (err) {
+            toast.error("Failed to submit scores");
+        }
     };
+
 
     return (
         <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col">

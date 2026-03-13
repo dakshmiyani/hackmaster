@@ -1,34 +1,61 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { mockTeamData } from "../data/mockData";
 import { FaGithub } from "react-icons/fa";
+import { getTeamsByEvent, getScanStats } from "../utils/api";
+import { toast } from "react-hot-toast";
 
-
-
+const EVENT_ID = import.meta.env.VITE_EVENT_ID || 1;
 
 export default function AdminPage() {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Hackathon");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [stats, setStats] = useState({ checkIn: 0, lunch: 0, dinner: 0, qr: 0 });
 
   useEffect(() => {
-    setIsLoading(true);
-    // Simulate API fetch delay
-    const timer = setTimeout(() => {
-      setDashboardData(mockTeamData);
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [selectedCategory]);
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [teamsRaw, checkInStats, lunchStats, dinnerStats] = await Promise.all([
+          getTeamsByEvent(EVENT_ID),
+          getScanStats({ event_id: EVENT_ID, type: "check-in" }),
+          getScanStats({ event_id: EVENT_ID, type: "lunch" }),
+          getScanStats({ event_id: EVENT_ID, type: "dinner" }),
+        ]);
 
-  const stats = useMemo(() => {
+        // Normalise teams into the shape the table expects
+        const teams = (Array.isArray(teamsRaw) ? teamsRaw : []).map((t) => ({
+          teamId: String(t.team_id),
+          teamName: t.name,
+          category: t.event_name || "Hackathon",
+          event_name: t.event_name,
+          members: t.members || [],
+        }));
+
+        setDashboardData(teams);
+        setStats({
+          checkIn: checkInStats?.count || 0,
+          lunch: lunchStats?.count || 0,
+          dinner: dinnerStats?.count || 0,
+        });
+      } catch (err) {
+        console.error("AdminPage fetch error:", err);
+        toast.error("Failed to load dashboard data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+
+
+  const teamStats = useMemo(() => {
     let totalTeams = 0;
-    let checkedIn = 0;
-    let checkedOut = 0;
     let totalMembers = 0;
 
     const filteredTeams = dashboardData.filter(
@@ -37,16 +64,11 @@ export default function AdminPage() {
 
     filteredTeams.forEach((team) => {
       totalTeams++;
-      const members = team.members || [];
-      totalMembers += members.length;
-      members.forEach((m) => {
-        if (m.checkIn) checkedIn++;
-        if (m.checkOut) checkedOut++;
-      });
+      totalMembers += (team.members || []).length;
     });
 
-    return { totalTeams, totalMembers, checkedIn, checkedOut };
-  }, [dashboardData, selectedCategory]);
+    return { totalTeams, totalMembers, checkedIn: stats.checkIn, checkedOut: 0 };
+  }, [dashboardData, selectedCategory, stats]);
 
   const visibleTeams = useMemo(() => {
     let filteredTeams = dashboardData.filter(
@@ -252,25 +274,25 @@ export default function AdminPage() {
                 <div className="p-4 bg-[#0d0d0d] rounded-xl border border-white/5 flex justify-between items-center">
                   <span className="text-gray-400 font-medium">Total Teams</span>
                   <span className="text-2xl font-bold text-white font-mono">
-                    {stats.totalTeams}
+                    {teamStats.totalTeams}
                   </span>
                 </div>
                 <div className="p-4 bg-[#0d0d0d] rounded-xl border border-white/5 flex justify-between items-center">
                   <span className="text-gray-400 font-medium">Total Members</span>
                   <span className="text-2xl font-bold text-white font-mono">
-                    {stats.totalMembers}
+                    {teamStats.totalMembers}
                   </span>
                 </div>
                 <div className="p-4 bg-[#0d0d0d] rounded-xl border border-emerald-900/20 flex justify-between items-center">
                   <span className="text-gray-400 font-medium">Checked In</span>
                   <span className="text-2xl font-bold text-emerald-500 font-mono">
-                    {stats.checkedIn}
+                    {teamStats.checkedIn}
                   </span>
                 </div>
                 <div className="p-4 bg-[#0d0d0d] rounded-xl border border-red-900/20 flex justify-between items-center">
-                  <span className="text-gray-400 font-medium">Checked Out</span>
+                  <span className="text-gray-400 font-medium">Lunch Served</span>
                   <span className="text-2xl font-bold text-red-500 font-mono">
-                    {stats.checkedOut}
+                    {stats.lunch}
                   </span>
                 </div>
               </div>
