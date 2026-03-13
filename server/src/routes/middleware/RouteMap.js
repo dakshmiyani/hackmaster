@@ -9,6 +9,7 @@ const GithubAnalyticsRouter = require("../router/gitHubAnalyticsRouter");
 const mentorRouter = require('../router/MentorRequestRouter');
 const plagiarismRouter = require("../router/plagiarismRouter");
 const ScoreRouter = require("../router/ScoreRouter");
+const PlagiarismRouter = require("../router/plagiarismRouter");
 
 const Router = express.Router();
 const openrouter = express.Router();
@@ -35,6 +36,7 @@ class RouteMap {
     openrouter.use("/mentor", mentorRouter);
     openrouter.use("/plagiarism", plagiarismRouter);
     openrouter.use("/admin", AdminRouter);
+    openrouter.use("/plagiarism", PlagiarismRouter);
 
     // 🔐 PROTECTED ROUTES
     Router.use("/qr", qrRouter);
