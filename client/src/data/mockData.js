@@ -68,3 +68,27 @@ export const mockMentorRequests = [
     status: "pending",
   },
 ];
+
+export const mockJudgeTeams = {
+  WEB: [
+    { teamId: "T-100", teamName: "Web Wizards", members: [{ name: "Alice" }, { name: "Bob" }] },
+    { teamId: "T-101", teamName: "DOM Destroyers", members: [{ name: "Charlie" }] },
+    { teamId: "T-102", teamName: "React Rangers", members: [{ name: "David" }, { name: "Eve" }] },
+  ],
+  "AI/ML": [
+    { teamId: "T-200", teamName: "Neural Ninjas", members: [{ name: "Frank" }, { name: "Grace" }] },
+    { teamId: "T-201", teamName: "Tensor Titans", members: [{ name: "Heidi" }] },
+    { teamId: "T-202", teamName: "Data Miners", members: [{ name: "Ivan" }] },
+  ]
+};
+
+export const mockVolunteerStats = {
+  checkIn: 45,
+  meals: {
+    breakfast: 38,
+    lunch: 42,
+    dinner: 0
+  },
+  totalParticipants: 120
+};
+

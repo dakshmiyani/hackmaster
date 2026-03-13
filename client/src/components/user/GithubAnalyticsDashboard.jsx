@@ -52,11 +52,11 @@ export default function GithubAnalyticsDashboard({ repoUrl }) {
           "totalCommits": 25,
           "averageCommitGapTime": "01:05:16",
           "commitHistory": [
-             { message: "Merge pull request #15 from user/feature", date: "2026-03-13T10:00:00Z" },
-             { message: "Add analytics dashboard implementation", date: "2026-03-13T08:30:00Z" },
-             { message: "Fix layout scaling issues", date: "2026-03-12T09:15:00Z" },
-             { message: "Update components architecture", date: "2026-03-11T16:45:00Z" },
-             { message: "Refactor API logic", date: "2026-03-10T11:20:00Z" }
+             { "sha": "5fa4e41", "date": "2026-03-13T10:56:50Z", "message": "github analytics added", "timeSincePreviousCommit": "01:51:35" },
+             { "sha": "14fac41", "date": "2026-03-13T09:05:15Z", "message": "folder added", "timeSincePreviousCommit": "01:36:19" },
+             { "sha": "0698f53", "date": "2026-03-13T07:28:56Z", "message": "server setup done", "timeSincePreviousCommit": "00:32:31" },
+             { "sha": "d5e3747", "date": "2026-03-13T06:56:25Z", "message": "tailwind setup", "timeSincePreviousCommit": "00:20:39" },
+             { "sha": "1bac4a7", "date": "2026-03-13T06:35:46Z", "message": "client setup", "timeSincePreviousCommit": "N/A" }
           ]
         });
       } finally {
@@ -109,7 +109,7 @@ export default function GithubAnalyticsDashboard({ repoUrl }) {
        </div>
 
        {/* Overview Cards */}
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+       <div className="grid grid-cols-4 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-[#111] border border-red-900/40 rounded-xl p-5 shadow-lg relative overflow-hidden group hover:border-red-600/50 transition-colors">
              <div className="absolute top-0 right-0 w-24 h-24 bg-red-600/10 rounded-full blur-2xl group-hover:bg-red-600/20 transition-all"></div>
              <p className="text-gray-400 text-sm font-semibold uppercase tracking-wider mb-1">Total Commits</p>
@@ -132,9 +132,9 @@ export default function GithubAnalyticsDashboard({ repoUrl }) {
           </div>
        </div>
 
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+       <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Commits Trend Chart */}
-          <div className="lg:col-span-2 bg-[#111] border border-red-900/40 rounded-xl p-6 shadow-lg">
+          <div className="grid bg-[#111] border border-red-900/40 rounded-xl p-6 shadow-lg">
              <h3 className="text-lg font-bold text-white mb-6">Commit Trends</h3>
              <div className="h-72 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -197,7 +197,7 @@ export default function GithubAnalyticsDashboard({ repoUrl }) {
           </div>
        </div>
 
-       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+       <div className="grid grid-cols-2 lg:grid-cols-2 gap-6">
           {/* Contributor Activity */}
           <div className="bg-[#111] border border-red-900/40 rounded-xl p-6 shadow-lg">
              <h3 className="text-lg font-bold text-white mb-6">Top Contributors</h3>
@@ -228,7 +228,19 @@ export default function GithubAnalyticsDashboard({ repoUrl }) {
                            <div key={idx} className="relative pl-6">
                                <div className="absolute -left-1.5 top-1.5 w-3 h-3 bg-red-600 rounded-full border-2 border-[#111] shadow-[0_0_10px_rgba(220,38,38,0.5)]"></div>
                                <h4 className="text-white font-medium">{commit.message}</h4>
-                               <p className="text-xs text-gray-500 mt-1">{new Date(commit.date).toLocaleString()}</p>
+                               <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-1.5">
+                                   <span>{new Date(commit.date).toLocaleString()}</span>
+                                   {commit.sha && (
+                                       <span className="font-mono bg-[#222] px-1.5 py-0.5 rounded text-gray-400 border border-white/5">
+                                           #{commit.sha}
+                                       </span>
+                                   )}
+                                   {commit.timeSincePreviousCommit && commit.timeSincePreviousCommit !== "N/A" && (
+                                       <span className="text-red-400/80 font-medium">
+                                           (+{commit.timeSincePreviousCommit})
+                                       </span>
+                                   )}
+                               </div>
                            </div>
                        ))
                     ) : (

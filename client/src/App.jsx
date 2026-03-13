@@ -4,25 +4,26 @@ import { Toaster } from "react-hot-toast";
 import Mentor from "./pages/Mentor";
 import Login from "./pages/Login";
 import CallPage from "./pages/CallPage";
-import { AuthProvider } from "./context/AuthContext";
-import "./App.css";
 import AdminPage from "./pages/AdminPage";
-import LeaderboardSelection from "../src/components/dashboard/LeaderboardSelection";
-import LeaderboardView from "../src/components/dashboard/LeaderboardView";
-import RegisterTeam from "../src/components/dashboard/RegisterTeam";
+import JudgePage from "./pages/JudgePage";
+import VolunteerPage from "./pages/VolunteerPage";
+import LeaderboardSelection from "./components/dashboard/LeaderboardSelection";
+import LeaderboardView from "./components/dashboard/LeaderboardView";
+import RegisterTeam from "./components/dashboard/RegisterTeam";
 import GithubAnalyticsDashboard from "./components/user/GithubAnalyticsDashboard";
+import "./App.css";
 
 function App() {
   return (
-    <AuthProvider>
+    <>
       <Toaster
         position="top-right"
         toastOptions={{
           duration: 2000,
           style: {
-            backgroundColor: "#1c1c1c",
+            backgroundColor: "#111",
             color: "white",
-            border: "1px solid #aaaaaa",
+            border: "1px solid rgba(220, 38, 38, 0.4)",
           },
         }}
       />
@@ -32,16 +33,18 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/team-leader" element={<UserPage />} />
           <Route path="/mentor" element={<Mentor />} />
+          <Route path="/judge" element={<JudgePage />} />
+          <Route path="/volunteer" element={<VolunteerPage />} />
           <Route path="/call/:roomId" element={<CallPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/admin/leaderboard-selection" element={<LeaderboardSelection />} />
           <Route path="/admin/leaderboard" element={<LeaderboardView />} />
           <Route path="/admin/leaderboard/:hackathonId" element={<LeaderboardView />} />
           <Route path="/admin/register" element={<RegisterTeam />} />
-          <Route path="/github-analytics-dashboard" element={<GithubAnalyticsDashboard />} />
+          <Route path="/admin/github-analytics" element={<GithubAnalyticsDashboard />} />
         </Routes>
       </BrowserRouter>
-    </AuthProvider>
+    </>
   );
 }
 
