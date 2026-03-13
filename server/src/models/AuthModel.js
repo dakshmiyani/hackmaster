@@ -7,8 +7,7 @@ class UserModel extends BaseModel {
     this.table = "users";
   }
 
-  async create({ name, email, password, role_id }) {
-
+  async create({ name, email, password, role_id }, trx) {
     const db = await this.getQueryBuilder();
 
     const insertData = this.insertStatement({
@@ -18,7 +17,7 @@ class UserModel extends BaseModel {
       role_id
     });
 
-    const [user] = await db(this.table)
+    const [user] = await (trx || db)(this.table)
       .insert(insertData)
       .returning(["user_id", "name", "email", "role_id"]);
 

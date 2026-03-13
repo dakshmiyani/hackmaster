@@ -4,6 +4,8 @@ const router = express.Router();
 const MemberManager = require('../../businessLogic/managers/MemberManager');
 const { appWrapper } = require('../../utils/routeWrapper');
 
+const ExcelManager = require('../../businessLogic/managers/ExcelManager');
+
 // ✅ CREATE MEMBER
 router.post(
   '/create',
@@ -118,6 +120,35 @@ router.get(
       message: 'Member fetched successfully',
     });
 
+  })
+);
+
+// ✅ BULK UPLOAD MEMBERS via EXCEL
+router.post(
+  '/upload',
+  appWrapper(async (req, res) => {
+    
+    if (!req.files || !req.files.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded. Please use the "file" field in your form-data.'
+      });
+    }
+
+    const file = req.files.file;
+    const { event_id, event_name } = req.body || {};
+    const userId = res.locals?.USER_INFO?.user?.user_id || null;
+
+    const result = await ExcelManager.processExcel(file.data, userId, {
+      eventId: event_id,
+      eventName: event_name
+    });
+    
+    res.json({
+      success: true,
+      message: 'Excel processed successfully',
+      data: result,
+    });
   })
 );
 

@@ -4,23 +4,42 @@ const UserModel = require("../../models/AuthModel");
 
 class AuthenticationManager {
 
-  static async registerUser({ name, email, password, role_id }) {
-
+  static async registerUser(payload) {
+    const { name, email, password, role_id, college, org_id, event_id, team_name } = payload;
     const userModel = new UserModel();
+    const Db = require("../../models/libs/Db");
+    const knex = await Db.getQueryBuilder();
 
     const existing = await userModel.findByEmail(email);
-
     if (existing) {
       throw new Error("User already exists");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    return userModel.create({
-      name,
-      email,
-      password: hashedPassword,
-      role_id
+    return await knex.transaction(async (trx) => {
+      // 1. Create User
+      const user = await userModel.create({
+        name,
+        email,
+        password: hashedPassword,
+        role_id
+      }, trx);
+
+      // 2. If Team Leader (Role 5), create Member entry too
+      if (Number(role_id) === 5) {
+        const MemberManager = require("./MemberManager");
+        await MemberManager._createMemberInternal({
+          name,
+          email,
+          college,
+          org_id,
+          event_id,
+          team_name
+        }, user.user_id, trx);
+      }
+
+      return user;
     });
   }
 

@@ -25,14 +25,27 @@ class EventModel extends BaseModel{
   return event;
  }
 
- async getAll(){
+  async findByNameNormalized(name) {
+    const db = await this.getQueryBuilder();
+    return db(this.table)
+      .whereRaw('LOWER(name) = ?', [name.toLowerCase()])
+      .where(this.whereStatement())
+      .first();
+  }
 
-  const db = await this.getQueryBuilder();
+  async findById(id) {
+    const db = await this.getQueryBuilder();
+    return db(this.table)
+      .where(this.whereStatement({ event_id: id }))
+      .first();
+  }
 
-  return db(this.table)
-  .where(this.whereStatement());
+  async getAll(){
+    const db = await this.getQueryBuilder();
 
- }
+    return db(this.table)
+      .where(this.whereStatement());
+  }
 
 }
 
