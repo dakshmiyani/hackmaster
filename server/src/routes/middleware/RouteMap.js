@@ -11,6 +11,9 @@ const Router = express.Router();
 const openrouter = express.Router();
 const Authrouter = require("../router/authRouter")
 const organizationRouter = require("../router/organization.Router");
+const Teamrouter = require("../router/Teamrouter");
+const memberRouter = require("../router/memberRouter");
+const qrRouter = require("../router/qrRouter");
 
 
 
@@ -23,6 +26,9 @@ class RouteMap {
 
     openrouter.use("/auth",Authrouter);
     openrouter.use("/organization", organizationRouter);
+    openrouter.use("/team", Teamrouter);
+    openrouter.use("/member", memberRouter);
+    openrouter.use("/qr", qrRouter);
    
 
     openrouter.use("/github", GithubAnalyticsRouter);
