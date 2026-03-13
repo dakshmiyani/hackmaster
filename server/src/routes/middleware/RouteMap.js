@@ -5,9 +5,12 @@ const AuthenticationError = require("../../errorHandlers/AuthenticationError");
 const AccessPermissionError = require("../../errorHandlers/AccessPermissionError");
 const { RES_LOCALS } = require("./constant");
 const AuthModel = require("../../models/AuthModel");
+const GithubAnalyticsRouter = require("../router/gitHubAnalyticsRouter");
 
 const Router = express.Router();
 const openrouter = express.Router();
+const Authrouter = require("../router/authRouter")
+const organizationRouter = require("../router/organization.Router");
 
 
 
@@ -15,10 +18,14 @@ class RouteMap {
   static setupRoutesAndAuth(app) {
 
     // 🔓 OPEN ROUTES
-    // app.use("/open/api/", openrouter);
+    app.use("/open/api/", openrouter);
     // 🔓 OPEN ROUTES (NO JWT)
-    // app.use("/open/api/auth",Authrouter);
 
+    openrouter.use("/auth",Authrouter);
+    openrouter.use("/organization", organizationRouter);
+   
+
+    openrouter.use("/github", GithubAnalyticsRouter);
 
     // app.use("/open/api/barcode",ProductRouter);
 
@@ -32,6 +39,8 @@ class RouteMap {
       RouteMap._addUserInformation,
       Router
     );
+
+
 
     // Router.use("/auth", Authrouter);
  
