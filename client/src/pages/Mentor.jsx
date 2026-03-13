@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Users, Clock, CheckCircle, Inbox, Code } from "lucide-react"
 import { Card, CardContent } from "@/components/MentorComponents/card"
 import { Button } from "@/components/MentorComponents/button"
@@ -57,15 +58,23 @@ const initialRequests = [
 const domains = ["All", "AI/ML", "Web Dev", "IoT", "Fintech", "DevOps"]
 
 export default function MentorDashboard() {
+  const navigate = useNavigate()
   const [requests, setRequests] = useState(initialRequests)
   const [selectedDomain, setSelectedDomain] = useState("All")
 
   const handleAcceptRequest = (id) => {
+    // Generate a unique room ID
+    const roomId = Math.random().toString(36).substring(7)
+    
     setRequests((prev) =>
       prev.map((request) =>
         request.id === id ? { ...request, status: "accepted" } : request
       )
     )
+
+    // In a real app, you'd call an API to update the status and notify the leader via socket.
+    // For now, we redirect the mentor to the call page.
+    navigate(`/call/${roomId}`)
   }
 
   const filteredRequests = requests.filter((r) => 
