@@ -4,6 +4,7 @@ const router = express.Router();
 const QRCodeManager = require('../../businessLogic/managers/qrManager');
 const QrModel = require('../../models/QrModel');
 const MemberModel = require('../../models/MemberModel');
+const ReportManager = require('../../businessLogic/managers/ReportManager');
 
 // ✅ Generate QR codes (ADMIN)
 router.post('/generate', async (req, res) => {
@@ -108,6 +109,24 @@ router.post('/scans', async (req, res) => {
 
   } catch (error) {
     console.error(error);
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// ✅ Get Scan Statistics
+router.post('/stats', async (req, res) => {
+  try {
+    const userId = res.locals?.USER_INFO?.user?.user_id || null;
+    const { count } = await ReportManager.getStats(req.body, userId);
+
+    return res.json({
+      success: true,
+      count
+    });
+  } catch (error) {
     return res.status(400).json({
       success: false,
       message: error.message,

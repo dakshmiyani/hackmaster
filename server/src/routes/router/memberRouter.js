@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 
 const MemberManager = require('../../businessLogic/managers/MemberManager');
-const { appWrapper } = require('../../utils/routeWrapper');
-
 const ExcelManager = require('../../businessLogic/managers/ExcelManager');
+const ReportManager = require('../../businessLogic/managers/ReportManager');
+const { appWrapper } = require('../../utils/routeWrapper');
 
 // ✅ CREATE MEMBER
 router.post(
@@ -149,6 +149,28 @@ router.post(
       message: 'Excel processed successfully',
       data: result,
     });
+  })
+);
+
+// 📊 DOWNLOAD EXCEL REPORT
+router.get(
+  '/report/excel/:eventId',
+  appWrapper(async (req, res) => {
+    const { eventId } = req.params;
+    const userId = res.locals?.USER_INFO?.user?.user_id || null;
+
+    const buffer = await ReportManager.generateEventReport(eventId, userId);
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=Event_Report_${eventId}.xlsx`
+    );
+
+    res.end(buffer);
   })
 );
 

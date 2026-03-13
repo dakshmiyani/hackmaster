@@ -66,6 +66,15 @@ class QrModel extends BaseModel {
 
     return qr;
   }
+  async countAssignedByEvent(event_id) {
+    const db = await this.getQueryBuilder();
+
+    return db(this.table)
+      .join("members", "qrs.member_id", "members.member_id")
+      .where("members.event_id", event_id)
+      .count("* as total")
+      .first();
+  }
 }
 
 module.exports = QrModel;

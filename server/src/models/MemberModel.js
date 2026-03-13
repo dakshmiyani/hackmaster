@@ -83,6 +83,19 @@ class MemberModel extends BaseModel {
       .where(this.whereStatement());
   }
 
+  async getDetailedMembersByEvent(event_id) {
+    const db = await this.getQueryBuilder();
+
+    return db(this.table)
+      .leftJoin("team_members", "members.member_id", "team_members.member_id")
+      .leftJoin("teams", "team_members.team_id", "teams.team_id")
+      .where("members.event_id", event_id)
+      .select(
+        "members.*",
+        "teams.name as team_name"
+      );
+  }
+
 }
 
 module.exports = MemberModel;
