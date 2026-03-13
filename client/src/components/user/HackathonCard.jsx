@@ -17,7 +17,7 @@ const HackathonCard = ({ hackathon, onClick, type }) => {
     >
       {/* Glow background */}
       {isOngoing && (
-        <div className="absolute inset-0 bg-gradient-to-br from-red-950/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-br from-red-950/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       )}
 
       {/* Live pulse for ongoing */}

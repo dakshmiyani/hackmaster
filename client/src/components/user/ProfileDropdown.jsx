@@ -20,9 +20,9 @@ const ProfileDropdown = ({ user, onClose }) => {
       style={{ animation: 'dropIn 0.2s ease-out' }}
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-red-950/60 to-black p-5 border-b border-red-900/30">
+      <div className="bg-linear-to-r from-red-950/60 to-black p-5 border-b border-red-900/30">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-red-500 to-red-800 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-red-900/50">
+          <div className="w-14 h-14 rounded-full bg-linear-to-br from-red-500 to-red-800 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-red-900/50">
             {user.avatar}
           </div>
           <div>
@@ -60,7 +60,7 @@ const ProfileDropdown = ({ user, onClose }) => {
             <div className="space-y-1.5">
               {user.team.members.map((member, idx) => (
                 <div key={idx} className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-red-700 to-red-900 flex items-center justify-center text-white text-xs font-bold">
+                  <div className="w-6 h-6 rounded-full bg-linear-to-br from-red-700 to-red-900 flex items-center justify-center text-white text-xs font-bold">
                     {member.split(' ').map(n => n[0]).join('')}
                   </div>
                   <span className="text-gray-300 text-sm">{member}</span>

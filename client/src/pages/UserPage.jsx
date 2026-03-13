@@ -79,7 +79,7 @@ const pastHackathons = [
 /* ─── Stat Card ─── */
 const StatCard = ({ icon, value, label }) => (
   <div className="bg-[#111] border border-[#222] rounded-2xl px-5 py-4 flex items-center gap-4">
-    <div className="w-10 h-10 rounded-xl bg-red-900/30 border border-red-900/40 flex items-center justify-center text-xl flex-shrink-0">
+    <div className="w-10 h-10 rounded-xl bg-red-900/30 border border-red-900/40 flex items-center justify-center text-xl shrink-0">
       {icon}
     </div>
     <div>
