@@ -1,8 +1,17 @@
-import UserPage from './pages/UserPage'
-import './App.css'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import UserPage from "./pages/UserPage";
+import Mentor from "./pages/Mentor";
+import "./App.css";
 
 function App() {
-  return <UserPage />
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/team-leader" element={<UserPage />} />
+        <Route path="/mentor" element={<Mentor />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
