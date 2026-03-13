@@ -7,6 +7,7 @@ const { RES_LOCALS } = require("./constant");
 const AuthModel = require("../../models/AuthModel");
 const GithubAnalyticsRouter = require("../router/gitHubAnalyticsRouter");
 const PlagiarismRouter = require("../router/plagiarismRouter");
+const mentorRouter = require('../router/mentorRouter');
 
 const Router = express.Router();
 const openrouter = express.Router();
@@ -39,7 +40,7 @@ class RouteMap {
 
     // app.use("/open/api/barcode",ProductRouter);
 
-
+      openrouter.use("/mentor", mentorRouter);
 
 
     //  PROTECTED ROUTES
