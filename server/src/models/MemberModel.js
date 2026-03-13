@@ -61,6 +61,7 @@ class MemberModel extends BaseModel {
     return db(this.table)
       .leftJoin("team_members", "members.member_id", "team_members.member_id")
       .leftJoin("teams", "team_members.team_id", "teams.team_id")
+      .leftJoin("events", "members.event_id", "events.event_id")
       .where("members.event_id", event_id)
       .andWhere(function () {
         this.where("members.name", "ilike", `%${name}%`)
@@ -71,6 +72,8 @@ class MemberModel extends BaseModel {
         "members.name",
         "members.email",
         "members.college",
+        "members.event_id",
+        "events.name as event_name",
         "teams.name as team_name",
         "teams.team_id"
       );
@@ -89,9 +92,11 @@ class MemberModel extends BaseModel {
     return db(this.table)
       .leftJoin("team_members", "members.member_id", "team_members.member_id")
       .leftJoin("teams", "team_members.team_id", "teams.team_id")
+      .leftJoin("events", "members.event_id", "events.event_id")
       .where("members.event_id", event_id)
       .select(
         "members.*",
+        "events.name as event_name",
         "teams.name as team_name"
       );
   }

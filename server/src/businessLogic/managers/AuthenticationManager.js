@@ -35,7 +35,8 @@ class AuthenticationManager {
           college,
           org_id,
           event_id,
-          team_name
+          team_name,
+          isLeader: true   // ✅ Mark as team leader
         }, user.user_id, trx);
       }
 

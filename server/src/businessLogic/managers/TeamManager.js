@@ -75,6 +75,14 @@ class TeamManager {
     return teamModel.updateTeam(team_id, updateData);
   }
 
+  static async getTeamLeader(team_id) {
+    if (!team_id) throw new Error("team_id is required");
+    const teamModel = new TeamModel();
+    const leader = await teamModel.getTeamLeader(team_id);
+    if (!leader) throw new Error("No team leader found for this team");
+    return leader;
+  }
+
 }
 
 module.exports = TeamManager;

@@ -14,6 +14,7 @@ const organizationRouter = require("../router/organization.Router");
 const Teamrouter = require("../router/Teamrouter");
 const memberRouter = require("../router/memberRouter");
 const qrRouter = require("../router/qrRouter");
+const judgingRouter = require("../router/judgingRouter");
 
 
 
@@ -29,6 +30,7 @@ class RouteMap {
     openrouter.use("/team", Teamrouter);
     openrouter.use("/member", memberRouter);
     openrouter.use("/qr", qrRouter);
+    openrouter.use("/judging", judgingRouter);
    
 
     openrouter.use("/github", GithubAnalyticsRouter);

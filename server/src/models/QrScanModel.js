@@ -36,10 +36,12 @@ class QrScanModel extends BaseModel {
 
     return db(this.table)
       .leftJoin("meals", "qr_scans.meal_id", "meals.meal_id")
+      .leftJoin("events", "qr_scans.event_id", "events.event_id")
       .where("qr_scans.event_id", event_id)
       .select(
         "qr_scans.*",
-        "meals.meal_type"
+        "meals.meal_type",
+        "events.name as event_name"
       );
   }
   async countByEventAndType(event_id, type) {

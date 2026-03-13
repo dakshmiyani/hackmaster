@@ -11,7 +11,7 @@ class MemberManager {
     });
   }
 
-  static async _createMemberInternal({ name, email, college, team_name, event_id, org_id }, userId, trx) {
+  static async _createMemberInternal({ name, email, college, team_name, event_id, org_id, isLeader = false }, userId, trx) {
     const memberModel = new MemberModel(userId);
     const teamModel = new TeamModel(userId);
 
@@ -53,10 +53,11 @@ class MemberManager {
         }, trx);
       }
 
-      // 4. Map the member to the team via junction table
+      // 4. Map the member to the team via junction table (with is_leader flag)
       await trx("team_members").insert({
         team_id: team.team_id,
-        member_id: member.member_id
+        member_id: member.member_id,
+        is_leader: isLeader
       });
     }
 

@@ -82,4 +82,21 @@ router.put(
   })
 );
 
+// GET TEAM LEADER
+router.get(
+  "/leader/:teamId",
+  appWrapper(async (req, res) => {
+
+    const { teamId } = req.params;
+
+    const leader = await TeamManager.getTeamLeader(teamId);
+
+    res.json({
+      success: true,
+      data: leader
+    });
+
+  })
+);
+
 module.exports = router;

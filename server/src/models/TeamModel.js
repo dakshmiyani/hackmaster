@@ -39,7 +39,9 @@ class TeamModel extends BaseModel {
     const db = await this.getQueryBuilder();
 
     return db(this.table)
-      .where(this.whereStatement({ event_id }));
+      .leftJoin("events", "teams.event_id", "events.event_id")
+      .where(this.whereStatement({ event_id }))
+      .select("teams.*", "events.name as event_name");
   }
 
   // Slot and addMemberToTeam logic removed as we use team_members junction table now
@@ -65,6 +67,29 @@ class TeamModel extends BaseModel {
       .returning("*");
 
     return team;
+  }
+
+  async findById(team_id) {
+    const db = await this.getQueryBuilder();
+    return db(this.table)
+      .where(this.whereStatement({ team_id }))
+      .first();
+  }
+
+  async getTeamLeader(team_id) {
+    const db = await this.getQueryBuilder();
+    return db("team_members")
+      .join("members", "team_members.member_id", "members.member_id")
+      .where("team_members.team_id", team_id)
+      .andWhere("team_members.is_leader", true)
+      .select(
+        "members.member_id",
+        "members.name",
+        "members.email",
+        "members.college",
+        "team_members.is_leader"
+      )
+      .first();
   }
 
 }
