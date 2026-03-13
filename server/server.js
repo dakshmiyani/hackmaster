@@ -9,11 +9,12 @@ const logger = require('morgan');
 const fileUpload = require('express-fileupload');
 const RouteMap = require('./src/routes/middleware/RouteMap');
 const ErrorHandler = require('./src/errorHandlers/ErrorHandler');
+const http = require('http');
+const { initSocket } = require('./src/utils/socket');
+
 const PORT = process.env.PORT || 3000;
 
 const app = express();
-
-
 
 
 // view engine setup
@@ -74,9 +75,13 @@ app.use(function (_req, _res, next) {
     next(createError(404));
 });
 
-app.listen(PORT, () => {
-    console.log(` Server running on port ${PORT}`);
+const server = http.createServer(app);
+initSocket(server); // 🔌 init socket
+
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
+
 
 
 module.exports = app;

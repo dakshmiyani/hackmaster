@@ -1,6 +1,6 @@
 const express = require("express");
 const GithubAnalyticsManager = require("../../businessLogic/managers/gitHubAnalyticsManager");
-const { appWrapper } = require("../routeWrapper");
+const { appWrapper } = require("../../utils/routeWrapper");
 const { ACCESS_ROLES } = require("../../businessLogic/accessmanagement/roleConstants");
 
 const router = express.Router();

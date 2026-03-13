@@ -6,9 +6,17 @@ const AccessPermissionError = require("../../errorHandlers/AccessPermissionError
 const { RES_LOCALS } = require("./constant");
 const AuthModel = require("../../models/AuthModel");
 const GithubAnalyticsRouter = require("../router/gitHubAnalyticsRouter");
+const PlagiarismRouter = require("../router/plagiarismRouter");
+const mentorRouter = require('../router/mentorRouter');
 
 const Router = express.Router();
 const openrouter = express.Router();
+const Authrouter = require("../router/authRouter")
+const organizationRouter = require("../router/organization.Router");
+const Teamrouter = require("../router/Teamrouter");
+const memberRouter = require("../router/memberRouter");
+const qrRouter = require("../router/qrRouter");
+const judgingRouter = require("../router/judgingRouter");
 
 
 
@@ -18,14 +26,21 @@ class RouteMap {
     // 🔓 OPEN ROUTES
     app.use("/open/api/", openrouter);
     // 🔓 OPEN ROUTES (NO JWT)
-    // app.use("/open/api/auth",Authrouter);
-      
+
+    openrouter.use("/auth",Authrouter);
+    openrouter.use("/organization", organizationRouter);
+    openrouter.use("/team", Teamrouter);
+    openrouter.use("/member", memberRouter);
+    openrouter.use("/qr", qrRouter);
+    openrouter.use("/judging", judgingRouter);
+   
 
     openrouter.use("/github", GithubAnalyticsRouter);
+    openrouter.use("/plagiarism", PlagiarismRouter);
 
     // app.use("/open/api/barcode",ProductRouter);
 
-
+      openrouter.use("/mentor", mentorRouter);
 
 
     //  PROTECTED ROUTES
