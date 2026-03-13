@@ -1,22 +1,30 @@
 const OrganizationModel = require("../../models/OrganizationModel");
 
-class OrganizationManager{
+class OrganizationManager {
 
- static async createOrganization(data,userId){
+  static async createOrganization(data, userId) {
 
-  const orgModel = new OrganizationModel(userId);
+    const orgModel = new OrganizationModel(userId);
 
-  return orgModel.create(data);
+    // Check if organization with same email already exists
+    const existing = await orgModel.findByEmail(data.email);
 
- }
+    if (existing) {
+      throw new Error("Organization already exists with this email");
+    }
 
- static async getOrganizations(){
+    // Create organization
+    return orgModel.create(data);
 
-  const orgModel = new OrganizationModel();
+  }
 
-  return orgModel.getAll();
+  static async getOrganizations() {
 
- }
+    const orgModel = new OrganizationModel();
+
+    return orgModel.getAll();
+
+  }
 
 }
 
