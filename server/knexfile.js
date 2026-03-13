@@ -17,7 +17,7 @@ module.exports = {
       acquireTimeoutMillis: 30000,
     },
     migrations: {
-      directory: "./src/models/migrations",
+      directory: "./hackmaster/src/models/migrations",
       tableName: "knex_migrations",
     },
     seeds: {
