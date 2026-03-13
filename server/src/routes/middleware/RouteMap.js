@@ -9,6 +9,8 @@ const GithubAnalyticsRouter = require("../router/gitHubAnalyticsRouter");
 
 const Router = express.Router();
 const openrouter = express.Router();
+const Authrouter = require("../router/authRouter")
+const organizationRouter = require("../router/organization.Router");
 
 
 
@@ -18,8 +20,10 @@ class RouteMap {
     // 🔓 OPEN ROUTES
     app.use("/open/api/", openrouter);
     // 🔓 OPEN ROUTES (NO JWT)
-    // app.use("/open/api/auth",Authrouter);
-      
+
+    openrouter.use("/auth",Authrouter);
+    openrouter.use("/organization", organizationRouter);
+   
 
     openrouter.use("/github", GithubAnalyticsRouter);
 

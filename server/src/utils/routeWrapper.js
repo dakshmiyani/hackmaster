@@ -1,4 +1,4 @@
-const { RES_LOCALS } = require("./middleware/constant");
+const { RES_LOCALS } = require("../routes/middleware/constant");
 const { ACCESS_ROLES } = require("../businessLogic/accessmanagement/roleConstants");
 const AccessPermissionError = require("../errorHandlers/AccessPermissionError");
 
