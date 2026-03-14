@@ -8,14 +8,18 @@ import { Button } from "@/components/MentorComponents/button"
 import { Badge } from "@/components/MentorComponents/badge"
 
 import socket from "../utils/socket"
+import { useAuth } from "../context/AuthContext"
 
 const domains = ["All", "AI/ML", "Web Dev", "IoT", "Fintech", "DevOps"]
 
 export default function MentorDashboard() {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [requests, setRequests] = useState([])
+  const [teams, setTeams] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedDomain, setSelectedDomain] = useState("All")
+  const [view, setView] = useState("requests") // "requests" or "teams"
 
   const fetchRequests = async () => {
     setIsLoading(true)
@@ -26,6 +30,7 @@ export default function MentorDashboard() {
         // Map backend fields to frontend fields
         const mapped = data.data.map(r => ({
           id: r.id,
+          teamId: r.team_id, // Ensure teamId is available
           teamName: r.team_name,
           leaderName: r.leader_name,
           domain: "AI/ML", // Backend doesn't have domain yet, defaulting to AI/ML
@@ -36,32 +41,17 @@ export default function MentorDashboard() {
         setRequests(mapped)
       }
     } catch (error) {
-      console.error("Fetch error:", error)
+      console.error("Fetch requests error:", error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  useEffect(() => {
-    fetchRequests()
-    
-    socket.on('new-mentor-request', (request) => {
-      console.log("🆕 New mentor request via socket:", request);
-      alert("NEW MENTOR REQUEST ARRIVED!");
-      fetchRequests(); 
-    });
-
-    return () => {
-      socket.off('new-mentor-request');
-    };
-  }, [])
-
   const handleAcceptRequest = async (id) => {
     console.log("ACCEPT REQUEST CALLED WITH ID:", id);
-    alert("Accepting request for ID: " + id);
     try {
-      // Mocking mentor_id
-      const mentor_id = 1; 
+      // Mocking mentor_id if not present in user object
+      const mentor_id = user?.user_id || 1; 
 
       const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/mentor/accept-request`, {
         method: 'POST',
@@ -80,6 +70,44 @@ export default function MentorDashboard() {
       console.error("Accept error:", error)
       alert("Error connecting to mentor service.")
     }
+  }
+
+  const fetchTeams = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/team/all-teams`)
+      const data = await response.json()
+      if (data.success) {
+        setTeams(data.data)
+      }
+    } catch (error) {
+      console.error("Fetch teams error:", error)
+    }
+  }
+
+  useEffect(() => {
+    fetchRequests()
+    fetchTeams()
+    
+    socket.on('new-mentor-request', (request) => {
+      console.log("🆕 New mentor request via socket:", request);
+      alert("NEW MENTOR REQUEST ARRIVED!");
+      fetchRequests(); 
+    });
+
+    return () => {
+      socket.off('new-mentor-request');
+    };
+  }, [])
+
+  const handleCallTeam = (teamId) => {
+    const roomId = `call-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+    console.log(`[MENTOR] Calling team ${teamId} in room ${roomId}`)
+    socket.emit('call-leader', { 
+        teamId, 
+        roomId, 
+        mentorName: user?.name || "Mentor" 
+    })
+    navigate(`/call/${roomId}`)
   }
 
   const filteredRequests = requests.filter((r) => 
@@ -123,15 +151,40 @@ export default function MentorDashboard() {
 
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8 border-b border-white/5">
+          <button 
+            onClick={() => setView("requests")}
+            className={`pb-4 px-2 text-sm font-bold transition-all ${view === "requests" ? "text-red-500 border-b-2 border-red-500" : "text-gray-500 hover:text-gray-300"}`}
+          >
+            PENDING REQUESTS ({pendingCount})
+          </button>
+          <button 
+            onClick={() => setView("teams")}
+            className={`pb-4 px-2 text-sm font-bold transition-all ${view === "teams" ? "text-red-500 border-b-2 border-red-500" : "text-gray-500 hover:text-gray-300"}`}
+          >
+            ALL TEAMS ({teams.length})
+          </button>
+        </div>
+
         {/* Section Header */}
         <div className="flex flex-col gap-6 mb-10 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="flex items-center gap-3 text-2xl font-bold text-white">
-              <Users className="h-6 w-6 text-red-600" />
-              Mentoring Requests
+              {view === "requests" ? (
+                <>
+                  <Inbox className="h-6 w-6 text-red-600" />
+                  Mentoring Requests
+                </>
+              ) : (
+                <>
+                  <Users className="h-6 w-6 text-red-600" />
+                  All Participating Teams
+                </>
+              )}
             </h2>
             <p className="mt-2 text-gray-400">
-              Review and accept team mentoring requests
+              {view === "requests" ? "Review and accept team mentoring requests" : "Browse all teams and initiate a direct call"}
             </p>
           </div>
           
@@ -153,23 +206,31 @@ export default function MentorDashboard() {
           </div>
         </div>
 
-        {/* Requests List */}
+        {/* Content Area */}
         <div className="space-y-6">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <div className="h-10 w-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-gray-400 font-medium">Loading requests...</p>
+                <p className="text-gray-400 font-medium">Loading...</p>
             </div>
-          ) : filteredRequests.length === 0 ? (
-            <EmptyState />
+          ) : view === "requests" ? (
+            filteredRequests.length === 0 ? <EmptyState /> : (
+              filteredRequests.map((request) => (
+                <RequestCard
+                  key={request.id}
+                  request={request}
+                  onAccept={handleAcceptRequest} // Use handleAcceptRequest for existing requests
+                />
+              ))
+            )
           ) : (
-            filteredRequests.map((request) => (
-              <RequestCard
-                key={request.id || request.request_id}
-                request={request}
-                onAccept={handleAcceptRequest}
-              />
-            ))
+            teams.length === 0 ? <p className="text-center text-gray-500 py-10">No teams found.</p> : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {teams.map((team) => (
+                  <TeamCard key={team.team_id} team={team} onCall={() => handleCallTeam(team.team_id)} />
+                ))}
+              </div>
+            )
           )}
         </div>
       </main>
@@ -239,6 +300,38 @@ function RequestCard({ request, onAccept }) {
           </Button>
         </div>
       </CardContent>
+    </Card>
+  )
+}
+
+function TeamCard({ team, onCall }) {
+  return (
+    <Card className="bg-[#0a0a0a] border-white/5 hover:border-red-600/30 transition-all p-6 group">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 rounded-xl bg-red-600/20 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all">
+            <Users className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="font-bold text-lg">{team.team_name}</h3>
+            <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Team ID: {team.team_id}</p>
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500">Domain</span>
+                <Badge variant="outline" className="border-red-900/30 text-red-500 bg-red-950/10">General</Badge>
+            </div>
+        </div>
+
+        <Button 
+          onClick={onCall}
+          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-11 rounded-lg"
+        >
+          Call Team Leader
+        </Button>
+      </div>
     </Card>
   )
 }

@@ -162,12 +162,26 @@ const UserPage = () => {
       });
     });
 
+    socket.on('incoming-call', (data) => {
+      console.log("[SOCKET DEBUG] 📞 RECEIVED incoming-call:", data);
+      setMentorNotification({
+        mentorName: data.mentorName || "A Mentor",
+        roomId: data.roomId,
+        message: "A mentor is initiating a video call with you!"
+      });
+      toast.success(`${data.mentorName || "A Mentor"} is calling you!`, {
+        icon: '📞',
+        duration: 10000
+      });
+    });
+
     socket.onAny((event, ...args) => {
         console.log(`[SOCKET DEBUG] 📥 Received Event: ${event}`, args);
     });
 
     return () => {
       socket.off('mentor-request-accepted');
+      socket.off('incoming-call');
       socket.offAny();
     };
   }, [teamId]);
@@ -190,7 +204,7 @@ const UserPage = () => {
         if (socket.connected) {
           socket.emit('join-team-room', teamId);
         }
-      }, 10000);
+      }, 1000);
 
       setIsLoadingTeam(true);
       fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/team/all-teams`)

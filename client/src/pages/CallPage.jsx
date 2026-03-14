@@ -73,13 +73,13 @@ export default function CallPage() {
         socket.emit('join-room', roomId, socket.id)
 
         // WebRTC Signaling Handlers
-        socket.on('user-connected', async (userId) => {
-          console.log('[CALL] Peer connected, creating offer:', userId)
+        socket.on('peer-joined', async (userId) => {
+          console.log('[CALL] Peer joined, I am the initiator. Creating offer.')
           await createOffer()
         })
 
         socket.on('offer', async (offer) => {
-          console.log('[CALL] Received offer')
+          console.log('[CALL] Received offer, I am the responder. Creating answer.')
           await handleOffer(offer)
         })
 
@@ -94,8 +94,13 @@ export default function CallPage() {
         socket.on('ice-candidate', async (candidate) => {
           console.log('[CALL] Received ICE candidate')
           if (pcRef.current && pcRef.current.remoteDescription) {
-            await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+            try {
+              await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+            } catch (e) {
+              console.error('[CALL] Error adding ice candidate:', e)
+            }
           } else {
+            console.log('[CALL] Buffering ICE candidate')
             candidateQueue.current.push(candidate)
           }
         })
@@ -104,6 +109,11 @@ export default function CallPage() {
           console.log('[CALL] Peer disconnected')
           setIsConnected(false)
           if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null
+          // Reset PeerConnection for future reconnects if needed
+          if (pcRef.current) {
+            pcRef.current.close()
+            pcRef.current = null
+          }
         })
       } catch (err) {
         console.error('Error accessing media devices:', err)
@@ -120,7 +130,7 @@ export default function CallPage() {
         pcRef.current.close()
         pcRef.current = null
       }
-      socket.off('user-connected')
+      socket.off('peer-joined')
       socket.off('offer')
       socket.off('answer')
       socket.off('ice-candidate')
@@ -129,19 +139,32 @@ export default function CallPage() {
   }, [roomId])
 
   const processCandidateQueue = async () => {
+    if (!pcRef.current) return
+    console.log('[CALL] Processing buffered candidates:', candidateQueue.current.length)
     while (candidateQueue.current.length > 0) {
       const candidate = candidateQueue.current.shift()
-      await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+      try {
+        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+      } catch (e) {
+        console.error('[CALL] Error adding buffered candidate:', e)
+      }
     }
   }
 
   const setupPeerConnection = () => {
-    console.log('[CALL] Setting up PeerConnection')
+    if (pcRef.current) {
+      console.log('[CALL] PeerConnection already exists, reusing.')
+      return pcRef.current
+    }
+
+    console.log('[CALL] Setting up new PeerConnection')
     const pc = new RTCPeerConnection(ICE_SERVERS)
     
-    localStreamRef.current.getTracks().forEach(track => {
-      pc.addTrack(track, localStreamRef.current)
-    })
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => {
+        pc.addTrack(track, localStreamRef.current)
+      })
+    }
 
     pc.ontrack = (event) => {
       console.log('[CALL] Received remote track')
@@ -171,19 +194,27 @@ export default function CallPage() {
   }
 
   const createOffer = async () => {
-    const pc = setupPeerConnection()
-    const offer = await pc.createOffer()
-    await pc.setLocalDescription(offer)
-    socket.emit('offer', { roomId, offer })
+    try {
+      const pc = setupPeerConnection()
+      const offer = await pc.createOffer()
+      await pc.setLocalDescription(offer)
+      socket.emit('offer', { roomId, offer })
+    } catch (err) {
+      console.error('[CALL] Error creating offer:', err)
+    }
   }
 
   const handleOffer = async (offer) => {
-    const pc = setupPeerConnection()
-    await pc.setRemoteDescription(new RTCSessionDescription(offer))
-    processCandidateQueue()
-    const answer = await pc.createAnswer()
-    await pc.setLocalDescription(answer)
-    socket.emit('answer', { roomId, answer })
+    try {
+      const pc = setupPeerConnection()
+      await pc.setRemoteDescription(new RTCSessionDescription(offer))
+      await processCandidateQueue()
+      const answer = await pc.createAnswer()
+      await pc.setLocalDescription(answer)
+      socket.emit('answer', { roomId, answer })
+    } catch (err) {
+      console.error('[CALL] Error handling offer:', err)
+    }
   }
 
   const toggleMic = () => {
