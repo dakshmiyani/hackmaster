@@ -11,7 +11,7 @@ export default function AdminPage() {
   const [dashboardData, setDashboardData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Hackathon");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -26,7 +26,7 @@ export default function AdminPage() {
           const mappedData = data.data.map(team => ({
             teamId: String(team.team_id),
             teamName: team.name,
-            category: "Hackathon", // Fallback, could map from event_id later
+            category: team.event_name || "Unknown",
             members: team.members || [], // If backend doesn't send members, fallback to empty array
             projectLink: team.project_link,
             isActive: team.is_active,
@@ -148,8 +148,9 @@ export default function AdminPage() {
                     className="bg-[#0d0d0d] border border-red-900/40 text-gray-300 px-4 py-2 rounded-xl text-sm focus:outline-none focus:border-red-600 transition-colors"
                   >
                     <option value="All">All Categories</option>
-                    <option value="Hackathon">Hackathon</option>
-                    <option value="UI/UX">UI/UX</option>
+                    {Array.from(new Set(dashboardData.map(t => t.category))).map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
                   </select>
                   <input
                     type="text"
@@ -344,7 +345,7 @@ export default function AdminPage() {
                     </span>
                     
                     {/* Analytics Button */}
-                    <div className="relative flex items-center justify-center group cursor-pointer" onClick={() => navigate("/admin/github-analytics")}>
+                    <div className="relative flex items-center justify-center group cursor-pointer" onClick={() => navigate("/admin/github-analytics", { state: { repoUrl: selectedTeam.projectLink } })}>
                       <div className="text-white text-xl transition-all duration-300 group-hover:text-red-500 group-hover:drop-shadow-[0_0_10px_rgba(255,0,0,0.8)] group-hover:scale-110">
                         <FaGithub />
                       </div>

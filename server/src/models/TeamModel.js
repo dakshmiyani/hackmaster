@@ -30,7 +30,7 @@ class TeamModel extends BaseModel {
 
   return db(this.table)
     .select(`${this.table}.*`, "events.name as event_name")
-    .leftJoin("events", `${this.table}.event_id`, "events.id")
+    .leftJoin("events", `${this.table}.event_id`, "events.event_id")
     .where(`${this.table}.is_deleted`, false)
     .modify((query) => {
       if (filters.event_id) query.where(`${this.table}.event_id`, filters.event_id);
@@ -53,7 +53,7 @@ class TeamModel extends BaseModel {
 
     return db(this.table)
       .select(`${this.table}.*`, "events.name as event_name")
-      .leftJoin("events", `${this.table}.event_id`, "events.id")
+      .leftJoin("events", `${this.table}.event_id`, "events.event_id")
       .where(`${this.table}.is_deleted`, false)
       .andWhere(`${this.table}.event_id`, event_id);
   }
