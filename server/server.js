@@ -79,6 +79,9 @@ const server = http.createServer(app);
 const io = initSocket(server); // 🔌 init socket
 app.set("socketio", io);
 
+// Start background workers
+require("./src/workers/plagiarismWorker");
+
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

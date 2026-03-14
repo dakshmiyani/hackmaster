@@ -31,7 +31,7 @@ async function run() {
   // Step 1: Submit job
   let jobId;
   try {
-    const res = await axios.post(`${BASE_URL}/plagiarism/check`, {
+    const res = await axios.post(`${BASE_URL}/open/api/plagiarism/check`, {
       repoUrl,
       compareUrls
     });
@@ -52,7 +52,7 @@ async function run() {
     attempts++;
 
     try {
-      const res = await axios.get(`${BASE_URL}/plagiarism/job/${jobId}`);
+      const res = await axios.get(`${BASE_URL}/open/api/plagiarism/job/${jobId}`);
       const { status, result, failedReason } = res.data;
 
       console.log(`[Attempt ${attempts}] Status: ${status}`);

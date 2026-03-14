@@ -26,15 +26,15 @@ const getStructuralSkeleton = require("../../utils/structuralNormalize");
  * and whether significant exact line matches were found.
  */
 function getVerdict(score, topMatch) {
-  const hasManyExactLines = topMatch && topMatch.matchedLineCount >= 15;
-  const highContainment   = topMatch && topMatch.containment >= 40; // ≥40% of base was 'taken'
-  const partialCopy       = topMatch && topMatch.containment >= 25; // ≥25% = partial copy
+  const hasManyExactLines = topMatch && topMatch.matchedLineCount >= 10;
+  const highContainment   = topMatch && topMatch.containment >= 35; // Lowered from 40%
+  const partialCopy       = topMatch && topMatch.containment >= 20; // Lowered from 25%
 
-  if (score >= 70 || (score >= 40 && hasManyExactLines) || (score >= 50 && highContainment))
+  if (score >= 65 || (score >= 35 && hasManyExactLines) || (score >= 45 && highContainment))
     return "High Plagiarism Detected 🚨";
-  if (score >= 40 || (score >= 15 && hasManyExactLines) || (score >= 25 && highContainment) || (score >= 20 && partialCopy))
+  if (score >= 35 || (score >= 12 && hasManyExactLines) || (score >= 20 && highContainment) || (score >= 15 && partialCopy))
     return "Moderate Plagiarism Detected ⚠️";
-  if (score >= 10 || partialCopy)
+  if (score >= 8 || partialCopy)
     return "Low Similarity Found 🔍";
   return "Likely Original ✅";
 }
@@ -70,8 +70,8 @@ class PlagiarismManager {
     const { owner, repo } = parseRepoUrl(repoUrl);
     // Always scan all branches (up to 20) — code may be on any branch!
     // For candidates (not deep), we analyze fewer files to stay fast.
-    const allFiles = await fetchRepoTree(owner, repo, 20);
-    const fileCap = isDeep ? 50 : 20; // deep = base repo, shallow = candidate
+    const allFiles = await fetchRepoTree(owner, repo, 50); // Increased to scan more branches/files
+    const fileCap = isDeep ? 100 : 40; // Doubled: deep=100, shallow=40
     const files = allFiles.slice(0, fileCap);
     console.log(`  [FP] ${owner}/${repo}: ${files.length} files`);
 
