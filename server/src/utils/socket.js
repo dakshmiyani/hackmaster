@@ -35,10 +35,21 @@ const initSocket = (server) => {
     // Both mentor + leader join the video call room
     socket.on('join-room', (roomId, userId) => {
       socket.join(roomId);
-      socket.to(roomId).emit('user-connected', userId);
+      log(`[SOCKET DEBUG] Socket ${socket.id} joined room ${roomId}`);
+
+      const clients = io.sockets.adapter.rooms.get(roomId);
+      const numClients = clients ? clients.size : 0;
+
+      if (numClients > 1) {
+        // Someone was already here. Tell THEM that a new peer joined.
+        // They will be the initiator (caller).
+        log(`[SOCKET DEBUG] Room ${roomId} has ${numClients} clients. Emitting peer-joined.`);
+        socket.to(roomId).emit('peer-joined', socket.id);
+      }
 
       socket.on('disconnect', () => {
-        socket.to(roomId).emit('user-disconnected', userId);
+        log(`[SOCKET DEBUG] Socket ${socket.id} disconnected from room ${roomId}`);
+        socket.to(roomId).emit('user-disconnected', socket.id);
       });
     });
 
@@ -54,8 +65,19 @@ const initSocket = (server) => {
     });
 
     socket.on('ice-candidate', ({ roomId, candidate }) => {
-      log(`[SIGNALING] ICE Candidate from ${socket.id} to room ${roomId}`);
       socket.to(roomId).emit('ice-candidate', candidate);
+    });
+
+    // Mentor calls a team leader
+    socket.on('call-leader', ({ teamId, roomId, mentorName }) => {
+      log(`[SOCKET DEBUG] Mentor calling team-${teamId} in room ${roomId}`);
+      socket.to(`team-${teamId}`).emit('incoming-call', { roomId, mentorName });
+    });
+
+    // Leader accepts the call (optional, but good for feedback)
+    socket.on('accept-call', ({ teamId, roomId }) => {
+      log(`[SOCKET DEBUG] Leader of team-${teamId} accepted call in ${roomId}`);
+      socket.to(roomId).emit('call-accepted', { teamId });
     });
 
   });
