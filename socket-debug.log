@@ -1432,3 +1432,35 @@
 [2026-03-14T05:34:43.742Z] [SOCKET DEBUG] 📥 Received Event: join-team-room from 8rhouLquKzf-12-rAAAD with args: ["1"]
 [2026-03-14T05:34:43.743Z] [SOCKET DEBUG] Socket 8rhouLquKzf-12-rAAAD joined team-1
 [2026-03-14T05:34:43.745Z] [SOCKET DEBUG] Current members in team-1: 8rhouLquKzf-12-rAAAD
+[2026-03-14T06:03:01.739Z] [SOCKET DEBUG] 📥 Received Event: join-team-room from YbO0NA4Xi9LxzT84AAAC with args: ["1"]
+[2026-03-14T06:03:01.740Z] [SOCKET DEBUG] Socket YbO0NA4Xi9LxzT84AAAC joined team-1
+[2026-03-14T06:03:01.740Z] [SOCKET DEBUG] Current members in team-1: YbO0NA4Xi9LxzT84AAAC
+[2026-03-14T06:03:04.944Z] --- [SOCKET ROOMS DEBUG] ---
+[2026-03-14T06:03:04.946Z] Room: team-1, Members: YbO0NA4Xi9LxzT84AAAC
+[2026-03-14T06:03:04.948Z] ----------------------------
+[2026-03-14T06:03:11.736Z] [SOCKET DEBUG] 📥 Received Event: join-team-room from YbO0NA4Xi9LxzT84AAAC with args: ["1"]
+[2026-03-14T06:03:11.737Z] [SOCKET DEBUG] Socket YbO0NA4Xi9LxzT84AAAC joined team-1
+[2026-03-14T06:03:11.738Z] [SOCKET DEBUG] Current members in team-1: YbO0NA4Xi9LxzT84AAAC
+[2026-03-14T06:03:14.951Z] --- [SOCKET ROOMS DEBUG] ---
+[2026-03-14T06:03:14.953Z] Room: team-1, Members: YbO0NA4Xi9LxzT84AAAC
+[2026-03-14T06:03:14.953Z] ----------------------------
+[2026-03-14T06:03:21.747Z] [SOCKET DEBUG] 📥 Received Event: join-team-room from YbO0NA4Xi9LxzT84AAAC with args: ["1"]
+[2026-03-14T06:03:21.748Z] [SOCKET DEBUG] Socket YbO0NA4Xi9LxzT84AAAC joined team-1
+[2026-03-14T06:03:21.749Z] [SOCKET DEBUG] Current members in team-1: YbO0NA4Xi9LxzT84AAAC
+[2026-03-14T06:03:24.961Z] --- [SOCKET ROOMS DEBUG] ---
+[2026-03-14T06:03:24.963Z] Room: team-1, Members: YbO0NA4Xi9LxzT84AAAC
+[2026-03-14T06:03:24.964Z] ----------------------------
+[2026-03-14T06:03:31.734Z] [SOCKET DEBUG] 📥 Received Event: join-team-room from YbO0NA4Xi9LxzT84AAAC with args: ["1"]
+[2026-03-14T06:03:31.736Z] [SOCKET DEBUG] Socket YbO0NA4Xi9LxzT84AAAC joined team-1
+[2026-03-14T06:03:31.737Z] [SOCKET DEBUG] Current members in team-1: YbO0NA4Xi9LxzT84AAAC
+[2026-03-14T06:03:34.973Z] --- [SOCKET ROOMS DEBUG] ---
+[2026-03-14T06:03:34.976Z] Room: team-1, Members: YbO0NA4Xi9LxzT84AAAC
+[2026-03-14T06:03:34.978Z] ----------------------------
+[2026-03-14T06:04:16.775Z] Socket connected: 66osZA3LZgWTUhVKAAAC
+[2026-03-14T06:04:16.781Z] Socket connected: _I40bKR637_DiuIHAAAD
+[2026-03-14T06:04:16.803Z] [SOCKET DEBUG] 📥 Received Event: join-team-room from _I40bKR637_DiuIHAAAD with args: ["1"]
+[2026-03-14T06:04:16.805Z] [SOCKET DEBUG] Socket _I40bKR637_DiuIHAAAD joined team-1
+[2026-03-14T06:04:16.808Z] [SOCKET DEBUG] Current members in team-1: _I40bKR637_DiuIHAAAD
+[2026-03-14T06:04:21.744Z] [SOCKET DEBUG] 📥 Received Event: join-team-room from _I40bKR637_DiuIHAAAD with args: ["1"]
+[2026-03-14T06:04:21.746Z] [SOCKET DEBUG] Socket _I40bKR637_DiuIHAAAD joined team-1
+[2026-03-14T06:04:21.746Z] [SOCKET DEBUG] Current members in team-1: _I40bKR637_DiuIHAAAD
