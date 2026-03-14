@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "dev:worker": "nodemon worker.js",
+    "dev:all": "npm run dev & npm run dev:worker",
     "migrate:make": "knex migrate:make --knexfile knexfile.js",
     "migrate:latest": "knex migrate:latest --knexfile knexfile.js",
     "migrate:rollback": "knex migrate:rollback --knexfile knexfile.js",
