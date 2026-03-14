@@ -34,9 +34,16 @@ const VolunteerPage = () => {
             setIsScanning(true);
         }
     };
+    const playSuccessSound = () => {
+        const audio = new Audio('/Fahh-sound-effect.mp3');
+        audio.play()
+        // .catch(e => console.error("Error playing sound:", e));
+    };
+
     const handleMockScan = () => {
         setIsLoading(true);
         setTimeout(() => {
+            playSuccessSound();
             toast.success(`Successful ${scanAction.label}! Participant verified.`);
             setIsLoading(false);
             setView('dashboard');
@@ -67,6 +74,8 @@ const VolunteerPage = () => {
             toast.error("Select participant first");
             return;
         }
+
+        playSuccessSound();
 
         console.log("🔍 SCANNED DATA:", {
             qrCode: qrData,
@@ -291,6 +300,7 @@ const VolunteerPage = () => {
                                         handleScan(result[0].rawValue);
                                     }
                                 }}
+                                sound={false}
                                 onError={(error) => console.log("Scanner Error:", error)}
                                 constraints={{ facingMode: "environment" }}
                                 styles={{
