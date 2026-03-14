@@ -42,20 +42,31 @@ class AuthenticationManager {
 
     const token = jwt.sign(
       {
-        user_id: user.id,
+        user_id: user.user_id || user.id,
         email: user.email
       },
       process.env.JWT_SECRET_KEY,
       { expiresIn: "1d" }
     );
 
+    let team_id = null;
+    if (user.role_id === 5) {
+      const TeamModel = require("../../models/TeamModel");
+      const teamModel = new TeamModel();
+      const team = await teamModel.findByTeamLeader(user.user_id || user.id);
+      if (team) {
+        team_id = team.team_id || team.id;
+      }
+    }
+
     return {
       token,
       user: {
-        id: user.id,
+        id: user.user_id || user.id,
         name: user.name,
         email: user.email,
-        role_id: user.role_id
+        role_id: user.role_id,
+        team_id
       }
     };
   }

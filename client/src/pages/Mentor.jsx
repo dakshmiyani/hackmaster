@@ -1,80 +1,75 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Users, Clock, CheckCircle, Inbox, Code } from "lucide-react"
+import { Users, Clock, CheckCircle, Inbox, Code, RefreshCw } from "lucide-react"
 import { Card, CardContent } from "@/components/MentorComponents/card"
 import { Button } from "@/components/MentorComponents/button"
 import { Badge } from "@/components/MentorComponents/badge"
-
-const initialRequests = [
-  {
-    id: "1",
-    teamName: "Code Crusaders",
-    leaderName: "Alex Johnson",
-    domain: "AI/ML",
-    problemStatement: "Smart Healthcare Assistant",
-    requestTime: "2 minutes ago",
-    status: "pending",
-  },
-  {
-    id: "2",
-    teamName: "Byte Builders",
-    leaderName: "Sarah Chen",
-    domain: "Web Dev",
-    problemStatement: "Decentralized Voting System",
-    requestTime: "5 minutes ago",
-    status: "pending",
-  },
-  {
-    id: "3",
-    teamName: "Neural Ninjas",
-    leaderName: "Marcus Williams",
-    domain: "IoT",
-    problemStatement: "Smart Campus Energy Management",
-    requestTime: "12 minutes ago",
-    status: "pending",
-  },
-  {
-    id: "4",
-    teamName: "Data Dragons",
-    leaderName: "Emily Rodriguez",
-    domain: "Fintech",
-    problemStatement: "Budget Planning for Students",
-    requestTime: "18 minutes ago",
-    status: "pending",
-  },
-  {
-    id: "5",
-    teamName: "Cloud Champions",
-    leaderName: "David Kim",
-    domain: "DevOps",
-    problemStatement: "Automated Testing Pipeline",
-    requestTime: "25 minutes ago",
-    status: "pending",
-  },
-]
 
 const domains = ["All", "AI/ML", "Web Dev", "IoT", "Fintech", "DevOps"]
 
 export default function MentorDashboard() {
   const navigate = useNavigate()
-  const [requests, setRequests] = useState(initialRequests)
+  const [requests, setRequests] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
   const [selectedDomain, setSelectedDomain] = useState("All")
 
-  const handleAcceptRequest = (id) => {
-    // Generate a unique room ID
-    const roomId = Math.random().toString(36).substring(7)
-    
-    setRequests((prev) =>
-      prev.map((request) =>
-        request.id === id ? { ...request, status: "accepted" } : request
-      )
-    )
+  const fetchRequests = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch('http://localhost:3000/open/api/mentor/pending-requests')
+      const data = await response.json()
+      if (data.success) {
+        // Map backend fields to frontend fields
+        const mapped = data.data.map(r => ({
+          id: r.id,
+          teamName: r.team_name,
+          leaderName: r.leader_name,
+          domain: "AI/ML", // Backend doesn't have domain yet, defaulting to AI/ML
+          problemStatement: "Request from " + r.team_name,
+          requestTime: new Date(r.created_at).toLocaleTimeString(),
+          status: r.is_served ? "accepted" : "pending"
+        }))
+        setRequests(mapped)
+      }
+    } catch (error) {
+      console.error("Fetch error:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-    // In a real app, you'd call an API to update the status and notify the leader via socket.
-    // For now, we redirect the mentor to the call page.
-    navigate(`/call/${roomId}`)
+  useEffect(() => {
+    fetchRequests()
+    
+    // Optional: Refresh interval or listen to socket
+    const interval = setInterval(fetchRequests, 10000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleAcceptRequest = async (id) => {
+    try {
+      // Mocking mentor_id
+      const mentor_id = 1; 
+
+      const response = await fetch('http://localhost:3000/open/api/mentor/accept-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_id: id, mentor_id })
+      })
+
+      const data = await response.json()
+      if (data.success) {
+        // Redirect to call page with the generated room_id
+        navigate(`/call/${data.data.room_id}`)
+      } else {
+        alert("Failed to accept request: " + data.message)
+      }
+    } catch (error) {
+      console.error("Accept error:", error)
+      alert("Error connecting to mentor service.")
+    }
   }
 
   const filteredRequests = requests.filter((r) => 
@@ -104,6 +99,14 @@ export default function MentorDashboard() {
             <Badge variant="outline" className="border-emerald-900/50 bg-emerald-950/20 px-3 py-1 text-xs font-semibold text-emerald-500">
               {acceptedCount} Accepted
             </Badge>
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={fetchRequests} 
+                className={`ml-2 text-gray-400 hover:text-white ${isLoading ? 'animate-spin' : ''}`}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </header>
@@ -142,7 +145,12 @@ export default function MentorDashboard() {
 
         {/* Requests List */}
         <div className="space-y-6">
-          {filteredRequests.length === 0 ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <div className="h-10 w-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-gray-400 font-medium">Loading requests...</p>
+            </div>
+          ) : filteredRequests.length === 0 ? (
             <EmptyState />
           ) : (
             filteredRequests.map((request) => (

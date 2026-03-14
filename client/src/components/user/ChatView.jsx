@@ -229,7 +229,7 @@ const MentorNotification = ({ visible, onDismiss }) => {
 };
 
 /* ─── Main Chat View ─── */
-const ChatView = ({ hackathon }) => {
+const ChatView = ({ hackathon, teamInfo }) => {
   // MentorRequestButton manages its own cooldown state internally.
   // ChatView only needs to respond to the request event (show notification).
   const [notificationVisible, setNotificationVisible] = useState(false);
@@ -308,14 +308,39 @@ const ChatView = ({ hackathon }) => {
 
 
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (!repoUrl.startsWith("https://github.com/")) {
                           alert("Please enter a valid GitHub repository URL");
                           return;
                         }
-                        console.log("Repo URL:", repoUrl);
-                        setRepoModalOpen(false);
-                        setRepoUrl("");
+                        
+                        try {
+                           const response = await fetch('http://localhost:3000/open/api/team/create', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    name: teamInfo?.name || "Code brokers",
+                                    event_id: teamInfo?.event_id || 2,
+                                    organization_id: teamInfo?.organization_id || 2,
+                                    project_link: repoUrl
+                                })
+                           });
+                           const data = await response.json();
+                           if (data.success) {
+                               alert("Repo added successfully!");
+                               setRepoModalOpen(false);
+                               setRepoUrl("");
+                               if (data.data.team_id) {
+                                   window.location.reload(); 
+                               }
+                           } else {
+                               alert("Failed to add repo: " + data.message);
+                           }
+                        } catch(error) {
+                           console.error("Submit error", error);
+                           alert("Error connecting to server");
+                        }
+                        
                       }}
                       className="px-4 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-500 text-white"
                     >

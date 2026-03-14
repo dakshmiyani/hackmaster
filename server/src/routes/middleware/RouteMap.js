@@ -6,7 +6,7 @@ const AccessPermissionError = require("../../errorHandlers/AccessPermissionError
 const { RES_LOCALS } = require("./constant");
 const AuthModel = require("../../models/AuthModel");
 const GithubAnalyticsRouter = require("../router/gitHubAnalyticsRouter");
-const mentorRouter = require('../router/mentorRouter');
+const mentorRouter = require('../router/MentorRequestRouter');
 
 const Router = express.Router();
 const openrouter = express.Router();

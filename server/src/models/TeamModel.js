@@ -25,6 +25,19 @@ class TeamModel extends BaseModel {
     return team;
   }
 
+  async getAllTeams(filters = {}) {
+  const db = await this.getQueryBuilder();
+
+  return db(this.table)
+    .select(`${this.table}.*`, "events.name as event_name")
+    .leftJoin("events", `${this.table}.event_id`, "events.id")
+    .where(`${this.table}.is_deleted`, false)
+    .modify((query) => {
+      if (filters.event_id) query.where(`${this.table}.event_id`, filters.event_id);
+      if (filters.organization_id) query.where(`${this.table}.organization_id`, filters.organization_id);
+    });
+}
+
   async findByNameAndEvent({ name, event_id }) {
 
     const db = await this.getQueryBuilder();
@@ -39,10 +52,20 @@ class TeamModel extends BaseModel {
     const db = await this.getQueryBuilder();
 
     return db(this.table)
-      .where(this.whereStatement({ event_id }));
+      .select(`${this.table}.*`, "events.name as event_name")
+      .leftJoin("events", `${this.table}.event_id`, "events.id")
+      .where(`${this.table}.is_deleted`, false)
+      .andWhere(`${this.table}.event_id`, event_id);
   }
 
   // Slot and addMemberToTeam logic removed as we use team_members junction table now
+
+  async findByTeamLeader(user_id) {
+    const db = await this.getQueryBuilder();
+    return db(this.table)
+      .where({ created_by: user_id, is_deleted: false })
+      .first();
+  }
 
   async searchByName(name) {
 

@@ -31,7 +31,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
-          <Route path="/team-leader" element={<UserPage />} />
+          <Route path="/team-leader/:teamId?" element={<UserPage />} />
           <Route path="/mentor" element={<Mentor />} />
           <Route path="/judge" element={<JudgePage />} />
           <Route path="/volunteer" element={<VolunteerPage />} />

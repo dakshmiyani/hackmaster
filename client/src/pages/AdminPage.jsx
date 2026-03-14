@@ -4,8 +4,6 @@ import { mockTeamData } from "../data/mockData";
 import { FaGithub } from "react-icons/fa";
 
 
-
-
 export default function AdminPage() {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState([]);
@@ -17,12 +15,33 @@ export default function AdminPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    // Simulate API fetch delay
-    const timer = setTimeout(() => {
-      setDashboardData(mockTeamData);
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+    const fetchTeams = async () => {
+      try {
+        const response = await fetch("http://localhost:3000/open/api/team/all-teams");
+        const data = await response.json();
+        if (data.success) {
+          const mappedData = data.data.map(team => ({
+            teamId: String(team.team_id),
+            teamName: team.name,
+            category: "Hackathon", // Fallback, could map from event_id later
+            members: team.members || [], // If backend doesn't send members, fallback to empty array
+            projectLink: team.project_link,
+            isActive: team.is_active,
+            createdAt: team.created_at,
+            createdBy: team.created_by
+          }));
+          setDashboardData(mappedData);
+        } else {
+          console.error("Failed to fetch teams:", data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching teams:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchTeams();
   }, [selectedCategory]);
 
   const stats = useMemo(() => {
@@ -205,22 +224,20 @@ export default function AdminPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            {team.members.some((m) => m.checkOut) ? (
-                              <span className="text-gray-500 font-medium text-sm">
-                                Checked Out
-                              </span>
-                            ) : team.members.every((m) => m.checkIn) && team.members.length > 0 ? (
-                              <span className="text-emerald-500 font-medium text-sm">
-                                All Active
-                              </span>
-                            ) : team.members.some((m) => m.checkIn) ? (
-                              <span className="text-yellow-500 font-medium text-sm">
-                                Active
-                              </span>
+                            {team.members && team.members.length > 0 ? (
+                              team.members.some((m) => m.checkOut) ? (
+                                <span className="text-gray-500 font-medium text-sm">Checked Out</span>
+                              ) : team.members.every((m) => m.checkIn) ? (
+                                <span className="text-emerald-500 font-medium text-sm">All Active</span>
+                              ) : team.members.some((m) => m.checkIn) ? (
+                                <span className="text-yellow-500 font-medium text-sm">Active</span>
+                              ) : (
+                                <span className="text-red-400 font-medium text-sm">Pending</span>
+                              )
+                            ) : team.isActive ? (
+                                <span className="text-emerald-500 font-medium text-sm">Active</span>
                             ) : (
-                              <span className="text-red-400 font-medium text-sm">
-                                Pending
-                              </span>
+                                <span className="text-gray-500 font-medium text-sm">Inactive</span>
                             )}
                           </td>
                         </tr>
@@ -302,33 +319,45 @@ export default function AdminPage() {
                   <h2 className="text-2xl font-bold text-white mb-1">
                     {selectedTeam.teamName}
                   </h2>
-                  <div className="flex items-center gap-3">
-                    <span className="text-gray-400 font-mono text-xs bg-black px-2 py-1 rounded">
-                      {selectedTeam.teamId}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-gray-400 font-mono text-xs bg-black/50 border border-white/10 px-2 py-1 rounded">
+                      ID: {selectedTeam.teamId}
                     </span>
-                    <span className="text-red-500 text-xs font-semibold uppercase">
+                    <span className="text-red-500 text-xs font-semibold uppercase bg-red-950/30 border border-red-900/30 px-2 py-1 rounded">
                       {selectedTeam.category}
                     </span>
-                    <div className="relative flex items-center justify-center group cursor-pointer">
-
-                      <div
-                        onClick={() => navigate("/admin/github-analytics")}
-                        className="text-white text-2xl transition-all duration-300 
-                  group-hover:text-red-500 
-                  group-hover:drop-shadow-[0_0_10px_rgba(255,0,0,0.8)] 
-                  group-hover:scale-110">
+                    
+                    {/* Analytics Button */}
+                    <div className="relative flex items-center justify-center group cursor-pointer" onClick={() => navigate("/admin/github-analytics")}>
+                      <div className="text-white text-xl transition-all duration-300 group-hover:text-red-500 group-hover:drop-shadow-[0_0_10px_rgba(255,0,0,0.8)] group-hover:scale-110">
                         <FaGithub />
                       </div>
-
-                      {/* Tooltip */}
-                      <span className="absolute top-0 left-7 opacity-0 group-hover:opacity-100 
-                   transition-all duration-300 
-                   text-xs bg-black border border-red-600 
-                   text-red-500 px-2 py-1 rounded-md whitespace-nowrap">
+                      <span className="absolute top-0 left-7 opacity-0 group-hover:opacity-100 transition-all duration-300 text-xs bg-black border border-red-600 text-red-500 px-2 py-1 rounded-md whitespace-nowrap z-50">
                         Git Analytics
                       </span>
-
                     </div>
+
+                    {/* Project Link Button */}
+                    {selectedTeam.projectLink && (
+                       <a href={selectedTeam.projectLink} target="_blank" rel="noreferrer" className="text-xs bg-blue-900/30 border border-blue-800/50 text-blue-400 hover:bg-blue-800/40 px-2 py-1 rounded transition-colors">
+                         View Project
+                       </a>
+                    )}
+                  </div>
+                  
+                  {/* Created At / Active Status details */}
+                  <div className="text-gray-400 text-xs mt-3 flex items-center gap-2">
+                    <span>Registered: {new Date(selectedTeam.createdAt).toLocaleDateString()}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-600"></span>
+                    <span className={selectedTeam.isActive ? "text-emerald-500" : "text-gray-500"}>
+                      {selectedTeam.isActive ? "Active Account" : "Inactive Account"}
+                    </span>
+                    {selectedTeam.createdBy && (
+                      <>
+                        <span className="w-1 h-1 rounded-full bg-gray-600"></span>
+                        <span>Created By User ID: {selectedTeam.createdBy}</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

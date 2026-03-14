@@ -36,13 +36,17 @@ const Login = () => {
                 if (role_id === 1) {
                     navigate("/volunteer", { replace: true });
                 } else if (role_id === 2) {
-                    navigate("/super_admin", { replace: true });
+                    navigate("/admin", { replace: true });
                 } else if (role_id === 3) {
                     navigate("/judge", { replace: true });
-                }else if (role_id === 4) {
+                } else if (role_id === 4) {
                     navigate("/mentor", { replace: true });
-                }else if (role_id === 5) {
-                    navigate("/team-leader", { replace: true });
+                } else if (role_id === 5) {
+                    if (user.team_id) {
+                        navigate(`/team-leader/${user.team_id}`, { replace: true });
+                    } else {
+                        navigate("/team-leader", { replace: true });
+                    }
                 }
             } else {
                 toast.error(result.message || "Login failed. Please check your credentials.");

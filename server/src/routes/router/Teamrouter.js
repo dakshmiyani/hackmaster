@@ -25,6 +25,14 @@ router.post(
   }, [ACCESS_ROLES.ALL])   // ✅ allow everyone
 );
 
+router.get(
+  "/all-teams",
+  appWrapper(async (req, res) => {
+    const teams = await TeamManager.getAllTeams(req.query);
+    res.json({ success: true, data: teams });
+  })
+);
+
 // GET TEAMS BY EVENT
 router.get(
   "/by-event/:eventId",

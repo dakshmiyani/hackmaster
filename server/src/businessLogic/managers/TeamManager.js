@@ -28,6 +28,11 @@ class TeamManager {
     });
   }
 
+  static async getAllTeams(filters) {
+    const teamModel = new TeamModel();
+    return teamModel.getAllTeams(filters);
+  }
+
   static async getTeamsByEvent(event_id) {
 
    

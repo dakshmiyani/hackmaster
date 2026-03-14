@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../components/user/Navbar';
 import HackathonCard from '../components/user/HackathonCard';
 import ChatView from '../components/user/ChatView';
@@ -94,8 +94,13 @@ const StatCard = ({ icon, value, label }) => (
 /* ─── UserPage ─── */
 const UserPage = () => {
   const navigate = useNavigate();
+  const { teamId } = useParams();
+  
   const [activeChat, setActiveChat] = useState(null);
   const [mentorNotification, setMentorNotification] = useState(null);
+  const [teamInfo, setTeamInfo] = useState({ name: "Leader" });
+  const [isLoadingTeam, setIsLoadingTeam] = useState(false);
+
 
   const openChat = (hackathon) => setActiveChat(hackathon);
   const closeChat = () => setActiveChat(null);
@@ -103,20 +108,58 @@ const UserPage = () => {
   useEffect(() => {
     // In a real app, you'd join a room based on teamId
     // For this demo, we'll just listen for any mentor joining
-    socket.on('mentor-joined', (data) => {
-      setMentorNotification(data);
+    socket.on('mentor-request-accepted', (data) => {
+      // data contains request info and room_id
+      setMentorNotification({
+        mentorName: "A Mentor", // Could be enhanced to include mentor name from backend
+        roomId: data.room_id,
+        message: "Your request has been accepted. Join the meeting to discuss your project!"
+      });
     });
 
-    return () => socket.off('mentor-joined');
+    return () => socket.off('mentor-request-accepted');
   }, []);
 
-  const handleRequestMentor = () => {
-    // Simulate sending a request
-    alert("Mentor request sent to available mentors!");
-    
-    // For demo purposes, we trigger the accept event manually if no backend is running
-    // In this specific task, we have the backend code, but for local testing without DB,
-    // we could mock it. But let's assume the backend handles it.
+  useEffect(() => {
+    if (teamId) {
+      setIsLoadingTeam(true);
+      fetch("http://localhost:3000/open/api/team/all-teams")
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            const currentTeam = data.data.find(t => String(t.team_id) === teamId);
+            if (currentTeam) {
+              setTeamInfo(currentTeam);
+            }
+          }
+        })
+        .catch(err => console.error(err))
+        .finally(() => setIsLoadingTeam(false));
+    }
+  }, [teamId]);
+
+  const handleRequestMentor = async () => {
+    try {
+      // Use actual teamId from params if available, else fallback to 10 for demo purposes
+      const requestTeamId = teamId ? parseInt(teamId) : 10;
+      const user_id = 5;
+
+      const response = await fetch('http://localhost:3000/open/api/mentor/request-mentoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ team_id: requestTeamId, user_id })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert("Mentor request sent successfully! Please wait for a mentor to accept.");
+      } else {
+        alert("Failed to send mentor request: " + data.message);
+      }
+    } catch (error) {
+      console.error("Mentor request error:", error);
+      alert("Error connection to mentor service.");
+    }
   };
 
   const handleJoinMeeting = () => {
@@ -126,15 +169,16 @@ const UserPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#090909] text-white font-sans">
-      <Navbar onBack={closeChat} showBack={!!activeChat} />
+    <>
+      <div className="min-h-screen bg-[#090909] text-white font-sans">
+        <Navbar onBack={closeChat} showBack={!!activeChat} />
 
       {/* Main content shifted below navbar */}
       <div className="pt-20 min-h-screen flex flex-col">
         {activeChat ? (
           /* ─── CHAT VIEW ─── */
           <div className="flex-1 flex flex-col h-[calc(100vh-5rem)]">
-            <ChatView hackathon={activeChat} />
+            <ChatView hackathon={activeChat} teamInfo={teamInfo} />
           </div>
         ) : (
           /* ─── DASHBOARD ─── */
@@ -147,17 +191,23 @@ const UserPage = () => {
                 <span className="text-red-500 text-sm font-semibold tracking-widest uppercase">Dashboard</span>
               </div>
               <h1 className="text-4xl sm:text-5xl font-extrabold text-white leading-tight">
-                Welcome back, <span className="text-red-500">Alex</span> 👋
+                {isLoadingTeam ? (
+                    <span className="animate-pulse bg-gray-800 rounded h-12 w-64 inline-block"></span>
+                ) : (
+                    <>Welcome back, <span className="text-red-500">{teamInfo.name}</span> 👋</>
+                )}
               </h1>
               <p className="text-gray-500 mt-2 text-base">Here's everything happening with your hackathon journey.</p>
               
-              <button 
-                onClick={handleRequestMentor}
-                className="mt-6 bg-[#111] border border-red-900/40 hover:border-red-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-3 transition-all"
-              >
-                <span className="flex h-2 w-2 rounded-full bg-red-600 animate-pulse"></span>
-                Request Mentor Support
-              </button>
+              <div className="flex flex-wrap gap-4 mt-6">
+                <button 
+                  onClick={handleRequestMentor}
+                  className="bg-[#111] border border-red-900/40 hover:border-red-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-3 transition-all"
+                >
+                  <span className="flex h-2 w-2 rounded-full bg-red-600 animate-pulse"></span>
+                  Request Mentor Support
+                </button>
+              </div>
             </div>
 
             {/* Mentor Joined Notification */}
@@ -237,7 +287,9 @@ const UserPage = () => {
           </main>
         )}
       </div>
+
     </div>
+    </>
   );
 };
 
