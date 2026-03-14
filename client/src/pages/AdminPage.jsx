@@ -15,12 +15,70 @@ export default function AdminPage() {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [dbStats, setDbStats] = useState({
+    totalTeams: 0,
+    totalMembers: 0,
+    checkedIn: 0,
+    lunchCount: 0,
+    breakfastCount: 0
+  });
+
+  const [broadcasts, setBroadcasts] = useState([]);
+  const [newBroadcast, setNewBroadcast] = useState("");
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+
+  const fetchBroadcasts = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/admin/broadcasts`);
+      const data = await response.json();
+      if (data.success) {
+        setBroadcasts(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching broadcasts:", error);
+    }
+  };
+
+  const handleSendBroadcast = async () => {
+    if (!newBroadcast.trim()) return;
+    setIsBroadcasting(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/admin/broadcast`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: newBroadcast })
+      });
+      console.log("Broadcast Response Status:", response.status);
+      const data = await response.json();
+      console.log("Broadcast Response Data:", data);
+      if (data.success) {
+        setBroadcasts([data.data, ...broadcasts]);
+        setNewBroadcast("");
+      }
+    } catch (error) {
+      console.error("Error sending broadcast:", error);
+    } finally {
+      setIsBroadcasting(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/admin/stats`);
+      const data = await response.json();
+      if (data.success) {
+        setDbStats(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  };
 
   useEffect(() => {
     setIsLoading(true);
     const fetchTeams = async () => {
       try {
-        const response = await fetch("http://localhost:3000/open/api/team/all-teams");
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/team/all-teams`);
         const data = await response.json();
         if (data.success) {
           const mappedData = data.data.map(team => ({
@@ -45,7 +103,25 @@ export default function AdminPage() {
     };
     
     fetchTeams();
+    fetchStats();
+    fetchBroadcasts();
   }, [selectedCategory]);
+
+  const handleExportExcel = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/admin/export-excel`);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Hackmaster_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export error:", error);
+    }
+  };
 
   const stats = useMemo(() => {
     let totalTeams = 0;
@@ -273,25 +349,31 @@ export default function AdminPage() {
                 <div className="p-4 bg-[#0d0d0d] rounded-xl border border-white/5 flex justify-between items-center">
                   <span className="text-gray-400 font-medium">Total Teams</span>
                   <span className="text-2xl font-bold text-white font-mono">
-                    {stats.totalTeams}
+                    {dbStats.totalTeams}
                   </span>
                 </div>
                 <div className="p-4 bg-[#0d0d0d] rounded-xl border border-white/5 flex justify-between items-center">
                   <span className="text-gray-400 font-medium">Total Members</span>
                   <span className="text-2xl font-bold text-white font-mono">
-                    {stats.totalMembers}
+                    {dbStats.totalMembers}
                   </span>
                 </div>
                 <div className="p-4 bg-[#0d0d0d] rounded-xl border border-emerald-900/20 flex justify-between items-center">
                   <span className="text-gray-400 font-medium">Checked In</span>
                   <span className="text-2xl font-bold text-emerald-500 font-mono">
-                    {stats.checkedIn}
+                    {dbStats.checkedIn}
                   </span>
                 </div>
-                <div className="p-4 bg-[#0d0d0d] rounded-xl border border-red-900/20 flex justify-between items-center">
-                  <span className="text-gray-400 font-medium">Checked Out</span>
-                  <span className="text-2xl font-bold text-red-500 font-mono">
-                    {stats.checkedOut}
+                <div className="p-4 bg-[#0d0d0d] rounded-xl border border-amber-900/20 flex justify-between items-center">
+                  <span className="text-gray-400 font-medium">Lunch Served</span>
+                  <span className="text-2xl font-bold text-amber-500 font-mono">
+                    {dbStats.lunchCount}
+                  </span>
+                </div>
+                <div className="p-4 bg-[#0d0d0d] rounded-xl border border-yellow-900/20 flex justify-between items-center">
+                  <span className="text-gray-400 font-medium">Breakfast</span>
+                  <span className="text-2xl font-bold text-yellow-500 font-mono">
+                    {dbStats.breakfastCount}
                   </span>
                 </div>
               </div>
@@ -309,6 +391,48 @@ export default function AdminPage() {
                 <IoQrCodeOutline className="text-xl text-red-500" />
                 Generate QR Bands PDF
               </button>
+
+              <button
+                onClick={handleExportExcel}
+                className="mt-4 w-full py-3 bg-[#111] border border-blue-900/40 hover:border-blue-600/50 hover:bg-[#1a1a1a] text-white font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                <span className="text-blue-500">📊</span>
+                Export Data (Excel)
+              </button>
+
+              {/* Broadcast Chat Box */}
+              <div className="mt-8 border-t border-red-900/40 pt-6">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                   <span className="w-2 h-6 bg-red-600 rounded-full"></span>
+                   Send Update To Users
+                </h3>
+                <div className="space-y-3">
+                  <textarea
+                    value={newBroadcast}
+                    onChange={(e) => setNewBroadcast(e.target.value)}
+                    placeholder="Type broadcast message..."
+                    className="w-full bg-[#0d0d0d] border border-red-900/40 text-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-red-600 transition-colors h-24 resize-none text-sm"
+                  />
+                  <button
+                    onClick={handleSendBroadcast}
+                    disabled={isBroadcasting || !newBroadcast.trim()}
+                    className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
+                  >
+                    {isBroadcasting ? "SENDING..." : "BROADCAST NOW"}
+                  </button>
+                </div>
+
+                <div className="mt-6 space-y-3 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                  {broadcasts.map((b) => (
+                    <div key={b.broadcast_id} className="p-3 bg-[#0d0d0d] rounded-xl border border-white/5">
+                      <p className="text-sm text-gray-300">{b.message}</p>
+                      <p className="text-[10px] text-gray-500 mt-2 font-mono">
+                        {new Date(b.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>

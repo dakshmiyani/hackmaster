@@ -17,7 +17,7 @@ export default function RegisterTeam() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (formData.role !== 'Participant' && formData.password !== formData.confirmPassword) {
@@ -26,29 +26,88 @@ export default function RegisterTeam() {
         }
 
         setIsLoading(true);
-        // Simulate API
-        setTimeout(() => {
-            toast.success(`${formData.role} registered successfully!`);
-            setFormData({
-                name: '', phone: '', email: '', college: '', role: 'Participant', event: 'DSA', password: '', confirmPassword: ''
+        try {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/member/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: formData.name,
+                    email: formData.email,
+                    college: formData.college,
+                    org_id: 2, // Hardcoded for demo/setup
+                    event_id: formData.event === 'Hackathon' ? 2 : (formData.event === 'DSA' ? 4 : 3),
+                    domain: formData.role === 'Participant' ? (formData.event === 'Hackathon' ? 'Web Dev' : formData.event) : null
+                })
             });
+            const data = await response.json();
+            if (data.success) {
+                toast.success(`${formData.role} registered successfully!`);
+                setFormData({
+                    name: '', phone: '', email: '', college: '', role: 'Participant', event: 'DSA', password: '', confirmPassword: ''
+                });
+            } else {
+                toast.error(data.message || "Registration failed");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Network error");
+        } finally {
+            setIsLoading(true);
             setIsLoading(false);
-        }, 1500);
+        }
     };
 
     const [bulkFile, setBulkFile] = useState(null);
 
-    const handleBulkSubmit = () => {
+    const handleBulkSubmit = async () => {
         if (!bulkFile) {
             toast.error("No file to upload!");
             return;
         }
         setIsLoading(true);
-        setTimeout(() => {
-            toast.success(`Successfully registered entries from ${bulkFile.name}!`);
-            setBulkFile(null);
+        try {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const bstr = e.target.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const rawData = XLSX.utils.sheet_to_json(ws);
+
+                // Map data based on columns
+                const membersToRegister = rawData.map(row => {
+                    return {
+                        name: row.member_name || row.Team_Leader || row.name || row.Full_Name,
+                        email: row.email || row.Leader_email || row.Email_Address,
+                        college: row.college || row.Leader_college || row.College,
+                        team_name: row.Team_Name || row.team_name,
+                        event_id: row.Event_name === 'DSA' ? 4 : (row.Event_name === 'Hackathon' ? 2 : 3),
+                        org_id: 2,
+                        domain: row.Domain || row.domain
+                    };
+                });
+
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/member/bulk-create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ members: membersToRegister })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    toast.success(`Successfully registered ${data.count} members!`);
+                    setBulkFile(null);
+                } else {
+                    toast.error(data.message || "Bulk upload failed");
+                }
+                setIsLoading(false);
+            };
+            reader.readAsBinaryString(bulkFile);
+        } catch (error) {
+            console.error(error);
+            toast.error("Error processing file");
             setIsLoading(false);
-        }, 2000);
+        }
     };
     const handleDownloadSample = (type) => {
         let headers = [];

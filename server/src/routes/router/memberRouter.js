@@ -8,18 +8,26 @@ const { appWrapper } = require('../../utils/routeWrapper');
 router.post(
   '/create',
   appWrapper(async (req, res) => {
-    
-    // We safely parse user id in case route used inside open API without login
-    const userId = res.locals?.USER_INFO?.user?.user_id || null;
-    
-    const memberData = await MemberManager.createMember(req.body, userId);
+    try {
+      // We safely parse user id in case route used inside open API without login
+      const userId = res.locals?.USER_INFO?.user?.user_id || null;
+      console.log("Creating member:", req.body);
       
-    res.json({
-      success: true,
-      data: memberData,
-      message: 'Member created successfully',
-    });
-   
+      const memberData = await MemberManager.createMember(req.body, userId);
+        
+      res.json({
+        success: true,
+        data: memberData,
+        message: 'Member created successfully',
+      });
+    } catch (error) {
+      console.error("MEMBER CREATE ERROR:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Internal Server Error during registration",
+        error: error.message
+      });
+    }
   })
 );
 
@@ -118,6 +126,22 @@ router.get(
       message: 'Member fetched successfully',
     });
 
+  })
+);
+
+// ✅ BULK CREATE MEMBERS
+router.post(
+  '/bulk-create',
+  appWrapper(async (req, res) => {
+    const userId = res.locals?.USER_INFO?.user?.user_id || null;
+    const { members } = req.body;
+
+    if (!Array.isArray(members)) {
+      return res.status(400).json({ success: false, message: 'Members must be an array' });
+    }
+
+    const result = await MemberManager.bulkCreateMembers(members, userId);
+    res.json({ success: true, ...result });
   })
 );
 

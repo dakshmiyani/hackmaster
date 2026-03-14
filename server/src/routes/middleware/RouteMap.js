@@ -17,6 +17,7 @@ const organizationRouter = require("../router/organization.Router");
 const Teamrouter = require("../router/Teamrouter");
 const memberRouter = require("../router/memberRouter");
 const qrRouter = require("../router/qrRouter");
+const AdminRouter = require("../router/AdminRouter");
 
 class RouteMap {
   static setupRoutesAndAuth(app) {
@@ -33,6 +34,7 @@ class RouteMap {
     openrouter.use("/github", GithubAnalyticsRouter);
     openrouter.use("/mentor", mentorRouter);
     openrouter.use("/plagiarism", plagiarismRouter);
+    openrouter.use("/admin", AdminRouter);
 
     // 🔐 PROTECTED ROUTES
     Router.use("/qr", qrRouter);

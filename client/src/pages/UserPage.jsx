@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Users } from 'lucide-react';
 import Navbar from '../components/user/Navbar';
 import HackathonCard from '../components/user/HackathonCard';
 import ChatView from '../components/user/ChatView';
@@ -100,6 +101,32 @@ const UserPage = () => {
   const [mentorNotification, setMentorNotification] = useState(null);
   const [teamInfo, setTeamInfo] = useState({ name: "Leader" });
   const [isLoadingTeam, setIsLoadingTeam] = useState(false);
+  const [broadcasts, setBroadcasts] = useState([]);
+
+  useEffect(() => {
+    // Initial fetch
+    fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/admin/broadcasts`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setBroadcasts(data.data);
+      });
+
+    // Real-time listener
+    socket.on('new-broadcast', (broadcast) => {
+      console.log("📢 Received Broadcast via Socket:", broadcast);
+      setBroadcasts(prev => [broadcast, ...prev]);
+      // Optional toast or notification could be added here
+    });
+
+    socket.on('connect', () => console.log("✅ Socket Connected"));
+    socket.on('connect_error', (err) => console.error("❌ Socket Connection Error:", err));
+
+    return () => {
+      socket.off('new-broadcast');
+      socket.off('connect');
+      socket.off('connect_error');
+    };
+  }, []);
 
 
   const openChat = (hackathon) => setActiveChat(hackathon);
@@ -123,7 +150,7 @@ const UserPage = () => {
   useEffect(() => {
     if (teamId) {
       setIsLoadingTeam(true);
-      fetch("http://localhost:3000/open/api/team/all-teams")
+      fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/team/all-teams`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -144,7 +171,7 @@ const UserPage = () => {
       const requestTeamId = teamId ? parseInt(teamId) : 10;
       const user_id = 5;
 
-      const response = await fetch('http://localhost:3000/open/api/mentor/request-mentoring', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/mentor/request-mentoring`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ team_id: requestTeamId, user_id })
@@ -178,7 +205,7 @@ const UserPage = () => {
         {activeChat ? (
           /* ─── CHAT VIEW ─── */
           <div className="flex-1 flex flex-col h-[calc(100vh-5rem)]">
-            <ChatView hackathon={activeChat} teamInfo={teamInfo} />
+            <ChatView hackathon={activeChat} teamInfo={teamInfo} broadcasts={broadcasts} />
           </div>
         ) : (
           /* ─── DASHBOARD ─── */
@@ -209,6 +236,7 @@ const UserPage = () => {
                 </button>
               </div>
             </div>
+
 
             {/* Mentor Joined Notification */}
             {mentorNotification && (
@@ -251,7 +279,7 @@ const UserPage = () => {
                   {ongoingHackathons.length} Active
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {ongoingHackathons.map((h) => (
                   <HackathonCard
                     key={h.id}
@@ -274,7 +302,7 @@ const UserPage = () => {
                   {pastHackathons.length} Completed
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                 {pastHackathons.map((h) => (
                   <HackathonCard
                     key={h.id}

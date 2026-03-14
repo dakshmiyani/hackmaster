@@ -34,10 +34,10 @@ class MemberModel extends BaseModel {
       .first();
   }
 
-  async findById(id) {
+  async findById(id, trx) {
     const db = await this.getQueryBuilder();
 
-    return db(this.table)
+    return (trx || db)(this.table)
       .where(this.whereStatement({ member_id: id }))
       .first();
   }
@@ -55,10 +55,10 @@ class MemberModel extends BaseModel {
     return member;
   }
 
-  async searchMembers({ event_id, name }) {
+  async searchMembers({ event_id, name }, trx) {
     const db = await this.getQueryBuilder();
 
-    return db(this.table)
+    return (trx || db)(this.table)
       .leftJoin("team_members", "members.member_id", "team_members.member_id")
       .leftJoin("teams", "team_members.team_id", "teams.team_id")
       .where("members.event_id", event_id)
@@ -76,10 +76,10 @@ class MemberModel extends BaseModel {
       );
   }
 
-  async getAll() {
+  async getAll(trx) {
     const db = await this.getQueryBuilder();
 
-    return db(this.table)
+    return (trx || db)(this.table)
       .where(this.whereStatement());
   }
 

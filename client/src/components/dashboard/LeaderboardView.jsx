@@ -17,44 +17,39 @@ export default function LeaderboardView() {
         const fetchLeaderboard = async () => {
             setIsLoading(true);
             try {
-                // Map frontend domain param to backend expected domain names
-                const domainMap = {
-                    'web': 'WEB',
-                    'aiml': 'AI/ML'
-                };
-                const targetDomain = domainMap[domain] || domain;
-                const response = await axios.get(`http://localhost:3000/open/api/score/leaderboard/${targetDomain}`);
-                if (response.data.success) {
-                    setLeaderboardData(response.data.data);
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/admin/leaderboard?domain=${domain}`);
+                const data = await response.json();
+                if (data.success) {
+                    setLeaderboardData(data.data);
                 }
             } catch (error) {
                 console.error("Error fetching leaderboard:", error);
-                toast.error("Failed to load leaderboard");
+                toast.error("Failed to load leaderboard data");
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchLeaderboard();
+        if (domain) {
+            fetchLeaderboard();
+        }
 
-        // Listen for live updates
-        socket.on("leaderboardUpdate", (payload) => {
-            const domainMap = {
-                'web': 'WEB',
-                'aiml': 'AI/ML'
-            };
-            if (payload.domain === domainMap[domain] || payload.domain === domain) {
-                fetchLeaderboard();
-            }
+        // Listen for real-time updates
+        socket.on('leaderboardUpdate', (data) => {
+            console.log('Leaderboard update received:', data);
+            // Re-fetch data if the update is for the current domain
+            // Note: domain in params might be lowercase (web/aiml), mapping in logic handles it
+            fetchLeaderboard();
         });
 
         return () => {
-            socket.off("leaderboardUpdate");
+            socket.off('leaderboardUpdate');
         };
     }, [domain]);
 
     const handleExport = () => {
-        toast.success(`${domainTitle} Leaderboard exported!`);
+        window.open(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/admin/leaderboard/export?domain=${domain}`, '_blank');
+        toast.success(`${domainTitle} Leaderboard export started!`);
     };
 
     return (

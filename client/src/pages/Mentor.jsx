@@ -18,7 +18,7 @@ export default function MentorDashboard() {
   const fetchRequests = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('http://localhost:3000/open/api/mentor/pending-requests')
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/mentor/pending-requests`)
       const data = await response.json()
       if (data.success) {
         // Map backend fields to frontend fields
@@ -53,7 +53,7 @@ export default function MentorDashboard() {
       // Mocking mentor_id
       const mentor_id = 1; 
 
-      const response = await fetch('http://localhost:3000/open/api/mentor/accept-request', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/mentor/accept-request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ request_id: id, mentor_id })
@@ -82,7 +82,7 @@ export default function MentorDashboard() {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Navbar */}
-      <header className="sticky top-0 z-50 border-b border-border bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/60">
+      <header className="sticky top-0 z-50 border-b border-border bg-black/95 backdrop-blur supports-backdrop-filter:bg-black/60">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-600 shadow-lg shadow-red-600/20">
@@ -217,10 +217,9 @@ function RequestCard({ request, onAccept }) {
           <Button
             onClick={() => onAccept(request.id)}
             disabled={isAccepted}
-            className={
-              isAccepted
-                ? "h-12 w-full sm:w-44 cursor-not-allowed bg-emerald-600/10 text-emerald-500 border border-emerald-900/30"
-                : "h-12 w-full sm:w-44 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.3)] hover:shadow-[0_0_30px_rgba(220,38,38,0.5)] hover:scale-105 transition-all duration-300 border-none"
+            className={isAccepted
+              ? "h-12 w-full sm:w-44 cursor-not-allowed bg-emerald-600/10 text-emerald-500 border border-emerald-900/30"
+              : "h-12 w-full sm:w-44 bg-linear-to-r from-red-600 to-red-700 text-white font-bold rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.3)] hover:shadow-[0_0_30px_rgba(220,38,38,0.5)] hover:scale-105 transition-all duration-300 border-none"
             }
           >
             {isAccepted ? "Accepted" : "Accept Request"}

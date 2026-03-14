@@ -229,12 +229,21 @@ const MentorNotification = ({ visible, onDismiss }) => {
 };
 
 /* ─── Main Chat View ─── */
-const ChatView = ({ hackathon, teamInfo }) => {
-  // MentorRequestButton manages its own cooldown state internally.
-  // ChatView only needs to respond to the request event (show notification).
+const ChatView = ({ hackathon, teamInfo, broadcasts = [] }) => {
+  // Combine mock messages with real broadcasts
+  // Map real broadcasts to match MessageBubble format
+  const realMessages = broadcasts.map(b => ({
+    id: `real-${b.broadcast_id}`,
+    text: b.message,
+    time: new Date(b.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    type: 'announcement' // New broadcasts default to announcement style
+  })).reverse(); // Reverse because broadcasts state is latest-first, but chat feed is oldest-first
+
+  const combinedMessages = [...allMessages, ...realMessages];
+  
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [mentorOnline] = useState(true);
-  const latestMsg = allMessages[allMessages.length - 1];
+  const latestMsg = combinedMessages.length > 0 ? combinedMessages[combinedMessages.length - 1] : null;
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -247,8 +256,14 @@ const ChatView = ({ hackathon, teamInfo }) => {
     setTimeout(() => setNotificationVisible(true), 3000);
   };
   const [repoModalOpen, setRepoModalOpen] = useState(false);
-  const [repoUrl, setRepoUrl] = useState("");
+  const [repoUrl, setRepoUrl] = useState(teamInfo?.project_link || "");
 
+  // Update repoUrl if teamInfo changes
+  useEffect(() => {
+    if (teamInfo?.project_link) {
+      setRepoUrl(teamInfo.project_link);
+    }
+  }, [teamInfo]);
 
   return (
     <div className="flex flex-col h-[90dvh] overflow-hidden">
@@ -277,7 +292,7 @@ const ChatView = ({ hackathon, teamInfo }) => {
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 bg-red-600 text-white hover:bg-red-500 hover:scale-105 active:scale-95"
             >
               <FaGithub className="text-white w-6 h-6" />
-              Add your repo
+              {teamInfo?.project_link ? "Edit your repo" : "Add your repo"}
             </button>
             {repoModalOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -315,26 +330,36 @@ const ChatView = ({ hackathon, teamInfo }) => {
                         }
                         
                         try {
-                           const response = await fetch('http://localhost:3000/open/api/team/create', {
-                                method: 'POST',
+                           const isUpdate = !!teamInfo?.project_link;
+                           const url = isUpdate 
+                            ? `${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/team/update`
+                            : `${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/team/create`;
+                           
+                           const method = isUpdate ? 'PUT' : 'POST';
+                           const payload = isUpdate 
+                            ? { team_id: teamInfo.team_id, project_link: repoUrl }
+                            : {
+                                name: teamInfo?.name || "Code brokers",
+                                event_id: teamInfo?.event_id || 2,
+                                organization_id: teamInfo?.organization_id || 2,
+                                project_link: repoUrl
+                              };
+
+                           const response = await fetch(url, {
+                                method: method,
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    name: teamInfo?.name || "Code brokers",
-                                    event_id: teamInfo?.event_id || 2,
-                                    organization_id: teamInfo?.organization_id || 2,
-                                    project_link: repoUrl
-                                })
+                                body: JSON.stringify(payload)
                            });
+                           
                            const data = await response.json();
                            if (data.success) {
-                               alert("Repo added successfully!");
+                               alert(isUpdate ? "Repo updated successfully!" : "Repo added successfully!");
                                setRepoModalOpen(false);
-                               setRepoUrl("");
-                               if (data.data.team_id) {
+                               if (data.data?.team_id || (isUpdate && teamInfo.team_id)) {
                                    window.location.reload(); 
                                }
                            } else {
-                               alert("Failed to add repo: " + data.message);
+                               alert(`Failed to ${isUpdate ? 'update' : 'add'} repo: ` + data.message);
                            }
                         } catch(error) {
                            console.error("Submit error", error);
@@ -344,7 +369,7 @@ const ChatView = ({ hackathon, teamInfo }) => {
                       }}
                       className="px-4 py-2 text-sm rounded-lg bg-red-600 hover:bg-red-500 text-white"
                     >
-                      Submit Repo
+                      {teamInfo?.project_link ? "Update Repo" : "Submit Repo"}
                     </button>
 
                   </div>
@@ -370,11 +395,11 @@ const ChatView = ({ hackathon, teamInfo }) => {
           </span>
         </div> */}
         <div className='overflow-y-scroll border p-2 rounded-xl border-red-900/30 gap-5 flex flex-col h-[65vh]'>
-          {allMessages.map((msg) => (
+          {combinedMessages.map((msg) => (
             <MessageBubble
               key={msg.id}
               msg={msg}
-              isLatest={msg.id === latestMsg.id}
+              isLatest={latestMsg && msg.id === latestMsg.id}
             />
           ))}
         </div>

@@ -24,7 +24,7 @@ export default function GithubAnalyticsDashboard({ repoUrl: propRepoUrl }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.post('http://localhost:3000/open/api/github/github_analytics', {
+        const res = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/github/github_analytics`, {
           repoUrl: repoUrl
         });
         if (res.data.success) {
@@ -78,7 +78,7 @@ export default function GithubAnalyticsDashboard({ repoUrl: propRepoUrl }) {
     setPlagiarismLoading(true);
     setPlagiarismError(null);
     try {
-      const res = await axios.post('http://localhost:3000/open/api/plagiarism/check', {
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/plagiarism/check`, {
          repoUrl: repoUrl || 'https://github.com/dakshmiyani/hackmaster.git'
       });
       if (res.data.success) {
