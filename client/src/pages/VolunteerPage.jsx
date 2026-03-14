@@ -47,12 +47,12 @@ const VolunteerPage = () => {
     }, []);
 
     const actions = [
-        { id: 'check-in', label: 'Check-In', icon: UserCheck, color: 'text-red-500', bg: 'bg-red-500/10' },
-        { id: 'breakfast', label: 'Breakfast', icon: Utensils, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-        { id: 'lunch', label: 'Lunch', icon: Utensils, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-        { id: 'dinner', label: 'Dinner', icon: Utensils, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-        { id: 'checkout', label: 'Check-Out', icon: UserCheck, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-        { id: 'assign', label: 'Assign QR', icon: QrCode, color: 'text-pink-500', bg: 'bg-pink-500/10' }
+        { id: 'check-in',  label: 'Check-In',   icon: UserCheck, color: 'text-red-500',     bg: 'bg-red-500/10' },
+        { id: 'breakfast', label: 'Breakfast',   icon: Utensils,  color: 'text-yellow-500',  bg: 'bg-yellow-500/10' },
+        { id: 'lunch',     label: 'Lunch',       icon: Utensils,  color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+        { id: 'dinner',    label: 'Dinner',      icon: Utensils,  color: 'text-blue-500',    bg: 'bg-blue-500/10' },
+        { id: 'check-out', label: 'Check-Out',   icon: UserCheck, color: 'text-purple-500',  bg: 'bg-purple-500/10' },
+        { id: 'assign',    label: 'Assign QR',   icon: QrCode,    color: 'text-pink-500',    bg: 'bg-pink-500/10' }
     ];
 
     const startScan = (action) => {
@@ -65,12 +65,9 @@ const VolunteerPage = () => {
         }
     };
     const handleMockScan = () => {
-        setIsLoading(true);
-        setTimeout(() => {
-            toast.success(`Successful ${scanAction.label}! Participant verified.`);
-            setIsLoading(false);
-            setView('dashboard');
-        }, 1500);
+        // For testing: simulate scanning a QR code value
+        const mockQrCode = prompt("Enter QR code value for testing:", "TEST-QR-001");
+        if (mockQrCode) handleScan(mockQrCode);
     };
 
     const [participants, setParticipants] = useState([]);
@@ -84,25 +81,41 @@ const VolunteerPage = () => {
         const matchesDomain = selectedDomain === 'ALL' || p.domain === selectedDomain;
         return matchesSearch && matchesDomain;
     });
-    const handleScan = (qrData) => {
+    const handleScan = async (qrData) => {
         if (scanAction?.id === "assign" && !selectedParticipant) {
             toast.error("Select participant first");
             return;
         }
 
-        console.log("🔍 SCANNED DATA:", {
-            qrCode: qrData,
-            action: scanAction?.label,
-            participant: selectedParticipant ? selectedParticipant.name : "N/A"
-        });
+        setIsLoading(true);
+        try {
+            if (scanAction?.id === "assign") {
+                // Assign QR code to a selected participant
+                await assignQr({ qr_code: qrData, member_id: selectedParticipant.id });
+                toast.success(`✅ QR assigned to ${selectedParticipant.name}!`);
+            } else {
+                // Submit scan (check-in, check-out, breakfast, lunch, dinner)
+                const result = await submitQrScan({ code: qrData, type: scanAction.id });
+                toast.success(`✅ ${scanAction.label} recorded for ${result?.member_name || 'participant'}!`);
+            }
 
-        toast.success(`Success! Scanned: ${qrData}`);
-
-        // Optional: Reset view after successful scan
-        setTimeout(() => {
-            setView("dashboard");
-            setSelectedParticipant(null);
-        }, 1500);
+            setTimeout(() => {
+                setView("dashboard");
+                setSelectedParticipant(null);
+                // Refresh stats after successful scan
+                setVolunteerStats(prev => ({
+                    ...prev,
+                    checkIn:  scanAction.id === 'check-in'  ? prev.checkIn  + 1 : prev.checkIn,
+                    lunch:    scanAction.id === 'lunch'     ? prev.lunch    + 1 : prev.lunch,
+                    dinner:   scanAction.id === 'dinner'    ? prev.dinner   + 1 : prev.dinner,
+                }));
+            }, 1000);
+        } catch (err) {
+            const msg = err?.response?.data?.message || err.message || 'Scan failed';
+            toast.error(`❌ ${msg}`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     if (isLoading && view === 'dashboard') {
@@ -313,6 +326,7 @@ const VolunteerPage = () => {
                                         handleScan(result[0].rawValue);
                                     }
                                 }}
+                                sound ="./faaa.mp3"
                                 onError={(error) => console.log("Scanner Error:", error)}
                                 constraints={{ facingMode: "environment" }}
                                 styles={{
