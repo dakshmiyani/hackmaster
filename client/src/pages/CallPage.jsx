@@ -329,14 +329,14 @@ export default function CallPage() {
       </div>
 
       {/* Video Area */}
-      <div className="flex-1 relative bg-[#050505] p-6">
+      <div className="flex-1 relative bg-[#050505] p-6 min-h-0">
         {/* Main Remote Video */}
         <div className="w-full h-full rounded-3xl overflow-hidden bg-[#0a0a0a] border border-white/5 relative group">
           <video 
             ref={remoteVideoRef} 
             autoPlay 
             playsInline 
-            className="w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain"
           />
           
           {!isConnected && (
@@ -370,7 +370,7 @@ export default function CallPage() {
             autoPlay 
             muted 
             playsInline 
-            className={`w-full h-full object-cover ${isCameraOff ? 'hidden' : ''}`}
+            className={`absolute inset-0 w-full h-full object-contain ${isCameraOff ? 'hidden' : ''}`}
           />
           {isCameraOff && (
             <div className="w-full h-full flex flex-col items-center justify-center bg-[#0a0a0a]">
