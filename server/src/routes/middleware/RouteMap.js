@@ -16,45 +16,29 @@ const Teamrouter = require("../router/Teamrouter");
 const memberRouter = require("../router/memberRouter");
 const qrRouter = require("../router/qrRouter");
 
-
-
 class RouteMap {
   static setupRoutesAndAuth(app) {
 
     // 🔓 OPEN ROUTES
     app.use("/open/api/", openrouter);
-    // 🔓 OPEN ROUTES (NO JWT)
-
-    openrouter.use("/auth",Authrouter);
+    openrouter.use("/auth", Authrouter);
     openrouter.use("/organization", organizationRouter);
     openrouter.use("/team", Teamrouter);
     openrouter.use("/member", memberRouter);
     openrouter.use("/qr", qrRouter);
-   
-
     openrouter.use("/github", GithubAnalyticsRouter);
+    openrouter.use("/mentor", mentorRouter);
 
-    // app.use("/open/api/barcode",ProductRouter);
+    // 🔐 PROTECTED ROUTES
+    Router.use("/qr", qrRouter);
+    Router.use("/github", GithubAnalyticsRouter);
 
-      openrouter.use("/mentor", mentorRouter);
-
-
-    //  PROTECTED ROUTES
     app.use(
       "/api",
       ...RouteMap._setupAuth(),
       RouteMap._addUserInformation,
       Router
     );
-
-
-
-    // Router.use("/auth", Authrouter);
- 
-    
-
-
-
 
     //  404 HANDLER
     app.use((req, res) => {
@@ -63,9 +47,6 @@ class RouteMap {
         message: "Specified path not found"
       });
     });
-
-     
-
   }
 
   static _setupAuth() {

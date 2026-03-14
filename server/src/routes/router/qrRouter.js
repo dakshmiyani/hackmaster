@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const QRCodeManager = require('../../businessLogic/managers/qrManager');
+const PDFManager = require('../../businessLogic/managers/pdfManager');
 const QrModel = require('../../models/QrModel');
 const MemberModel = require('../../models/MemberModel');
 
@@ -112,6 +113,33 @@ router.post('/scans', async (req, res) => {
       success: false,
       message: error.message,
     });
+  }
+});
+// ✅ List all QR codes
+router.get('/list', async (req, res) => {
+  try {
+    const userId = res.locals?.USER_INFO?.user?.user_id || null;
+    const qrModel = new QrModel(userId);
+    const db = await qrModel.getQueryBuilder();
+    const qrs = await db('qrs').select('*');
+    return res.json({ success: true, data: qrs });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ✅ Generate PDF for QR Bands
+router.post('/generate-pdf', async (req, res) => {
+  try {
+    const userId = res.locals?.USER_INFO?.user?.user_id || null;
+    const pdfBuffer = await PDFManager.generateQRBandsPDF(req.body, userId);
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=qr-bands.pdf');
+    return res.send(pdfBuffer);
+  } catch (error) {
+    console.error('PDF Generation Error:', error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 });
 

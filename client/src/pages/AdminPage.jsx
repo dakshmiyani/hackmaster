@@ -2,6 +2,8 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { mockTeamData } from "../data/mockData";
 import { FaGithub } from "react-icons/fa";
+import { IoQrCodeOutline } from "react-icons/io5";
+import QRGeneratorModal from "../components/dashboard/QRGeneratorModal";
 
 
 export default function AdminPage() {
@@ -12,6 +14,7 @@ export default function AdminPage() {
   const [selectedCategory, setSelectedCategory] = useState("Hackathon");
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -297,10 +300,23 @@ export default function AdminPage() {
               >
                 Register Team
               </button>
+
+              <button
+                onClick={() => setShowQRModal(true)}
+                className="mt-4 w-full py-3 bg-[#111] border border-red-900/40 hover:border-red-600/50 hover:bg-[#1a1a1a] text-white font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                <IoQrCodeOutline className="text-xl text-red-500" />
+                Generate QR Bands PDF
+              </button>
             </div>
           </div>
         </div>
       </main>
+
+      {/* QR Generator Modal */}
+      {showQRModal && (
+        <QRGeneratorModal onClose={() => setShowQRModal(false)} />
+      )}
 
       {/* Detail Modal */}
       {selectedTeam && (

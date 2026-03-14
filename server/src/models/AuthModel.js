@@ -26,12 +26,18 @@ class UserModel extends BaseModel {
   }
 
   async findByEmail(email) {
-
     const db = await this.getQueryBuilder();
-
     return db(this.table)
       .where(this.whereStatement({ email }))
       .first();
+  }
+
+  async getUserRoleById(email) {
+    const user = await this.findByEmail(email);
+    if (!user) return null;
+    return {
+      roles: [{ role_id: user.role_id, name: 'admin' }]
+    };
   }
 
 }
