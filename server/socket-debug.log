@@ -1,0 +1,15 @@
+[2026-03-14T05:02:42.046Z] [API DEBUG] POST /accept-request - request_id: 8, mentor_id: 1
+[2026-03-14T05:02:42.426Z] [API DEBUG] acceptRequest result: {"id":8,"team_id":1,"created_by":5,"is_served":true,"is_active":true,"is_deleted":false,"last_modified_by":1,"created_at":"2026-03-14T05:02:39.288Z","updated_at":"2026-03-14T05:02:42.152Z","room_id":"fc4c3eb6-cb88-480b-83ef-d9b501e5e88c"}
+[2026-03-14T05:02:42.735Z] [SOCKET DEBUG] Emitting mentor-request-accepted to team-1. Sockets in room: gDQ_PE-eanpLRsezAAAJ, TiBl8egLJQkmpXlHAAAj
+[2026-03-14T05:06:35.874Z] [API DEBUG] POST /accept-request - request_id: 8, mentor_id: 1
+[2026-03-14T05:06:37.331Z] [API DEBUG] acceptRequest result: {"id":8,"team_id":1,"created_by":5,"is_served":true,"is_active":true,"is_deleted":false,"last_modified_by":1,"created_at":"2026-03-14T05:02:39.288Z","updated_at":"2026-03-14T05:06:37.117Z","room_id":"ef19d132-9572-4db7-99fa-0b3debd44f7b"}
+[2026-03-14T05:06:37.637Z] [SOCKET DEBUG] Emitting mentor-request-accepted to team-1. Sockets in room: if3DmxXGjxAGPKS4AAAP
+[2026-03-14T05:07:39.101Z] [API DEBUG] POST /accept-request - request_id: 9, mentor_id: 1
+[2026-03-14T05:07:39.486Z] [API DEBUG] acceptRequest result: {"id":9,"team_id":1,"created_by":5,"is_served":true,"is_active":true,"is_deleted":false,"last_modified_by":1,"created_at":"2026-03-14T05:07:30.549Z","updated_at":"2026-03-14T05:07:39.263Z","room_id":"5e02f52c-6ed4-41be-9a5c-3eed0ecc6980"}
+[2026-03-14T05:07:40.000Z] [SOCKET DEBUG] Emitting mentor-request-accepted to team-1. Sockets in room: if3DmxXGjxAGPKS4AAAP, R0K7ImW4E1jNgtC1AAAL
+[2026-03-14T05:16:51.988Z] [API DEBUG] POST /accept-request - request_id: 10, mentor_id: 1
+[2026-03-14T05:16:52.229Z] [API DEBUG] acceptRequest result: {"id":10,"team_id":1,"created_by":5,"is_served":true,"is_active":true,"is_deleted":false,"last_modified_by":1,"created_at":"2026-03-14T05:16:45.108Z","updated_at":"2026-03-14T05:16:52.079Z","room_id":"26272110-ebc2-4626-a2c2-45e10c8fb3fd"}
+[2026-03-14T05:16:52.512Z] [SOCKET DEBUG] Emitting mentor-request-accepted to team-1. Sockets in room: 7h4yVTJmnw_Ju57kAAAL
+[2026-03-14T05:28:34.528Z] [API DEBUG] POST /accept-request - request_id: 11, mentor_id: 1
+[2026-03-14T05:28:34.856Z] [API DEBUG] acceptRequest result: {"id":11,"team_id":1,"created_by":5,"is_served":true,"is_active":true,"is_deleted":false,"last_modified_by":1,"created_at":"2026-03-14T05:28:25.046Z","updated_at":"2026-03-14T05:28:34.834Z","room_id":"20c2bafa-05d4-4c66-915d-13730b99ea67"}
+[2026-03-14T05:28:35.269Z] [SOCKET DEBUG] Emitting mentor-request-accepted to team-1. Sockets in room: 8rhouLquKzf-12-rAAAD
