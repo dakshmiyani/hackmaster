@@ -33,7 +33,7 @@ constructor() {
         'users.email as leader_email'
       )
       .innerJoin('teams', 'mentor_requests.team_id', 'teams.team_id')
-      .innerJoin('users', 'mentor_requests.created_by', 'users.user_id')
+      .leftJoin('users', 'mentor_requests.created_by', 'users.user_id')
       .where({
         'mentor_requests.is_served': false,
         'mentor_requests.is_deleted': false,

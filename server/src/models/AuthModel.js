@@ -32,6 +32,13 @@ class UserModel extends BaseModel {
       .first();
   }
 
+  async getById(userId) {
+    const db = await this.getQueryBuilder();
+    return db(this.table)
+      .where({ user_id: userId })
+      .first();
+  }
+
   async getUserRoleById(email) {
     const user = await this.findByEmail(email);
     if (!user) return null;

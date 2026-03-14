@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/MentorComponents/card"
 import { Button } from "@/components/MentorComponents/button"
 import { Badge } from "@/components/MentorComponents/badge"
 
+import socket from "../utils/socket"
+
 const domains = ["All", "AI/ML", "Web Dev", "IoT", "Fintech", "DevOps"]
 
 export default function MentorDashboard() {
@@ -43,12 +45,20 @@ export default function MentorDashboard() {
   useEffect(() => {
     fetchRequests()
     
-    // Optional: Refresh interval or listen to socket
-    const interval = setInterval(fetchRequests, 10000)
-    return () => clearInterval(interval)
+    socket.on('new-mentor-request', (request) => {
+      console.log("🆕 New mentor request via socket:", request);
+      alert("NEW MENTOR REQUEST ARRIVED!");
+      fetchRequests(); 
+    });
+
+    return () => {
+      socket.off('new-mentor-request');
+    };
   }, [])
 
   const handleAcceptRequest = async (id) => {
+    console.log("ACCEPT REQUEST CALLED WITH ID:", id);
+    alert("Accepting request for ID: " + id);
     try {
       // Mocking mentor_id
       const mentor_id = 1; 
@@ -155,7 +165,7 @@ export default function MentorDashboard() {
           ) : (
             filteredRequests.map((request) => (
               <RequestCard
-                key={request.id}
+                key={request.id || request.request_id}
                 request={request}
                 onAccept={handleAcceptRequest}
               />
@@ -182,7 +192,7 @@ function RequestCard({ request, onAccept }) {
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-3">
                 <h3 className="text-xl font-bold text-white tracking-tight truncate">
-                  {request.teamName}
+                  {request.teamName || request.team_name}
                 </h3>
                 {isAccepted && (
                   <Badge className="bg-emerald-600 text-white border-none shadow-lg shadow-emerald-600/20">
@@ -192,7 +202,7 @@ function RequestCard({ request, onAccept }) {
                 )}
               </div>
               <p className="text-gray-400 font-medium truncate">
-                Led by {request.leaderName}
+                Led by {request.leaderName || request.leader_name}
               </p>
             </div>
 
@@ -212,10 +222,13 @@ function RequestCard({ request, onAccept }) {
         <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-center sm:shrink-0">
           <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
             <Clock className="h-4 w-4 text-red-600/50" />
-            <span>{request.requestTime}</span>
+           <span>{request.requestTime || new Date(request.created_at).toLocaleTimeString()}</span>
           </div>
           <Button
-            onClick={() => onAccept(request.id)}
+            onClick={() => {
+                console.log("ACCEPT CLICKED FOR ID:", request.id);
+                onAccept(request.id);
+            }}
             disabled={isAccepted}
             className={isAccepted
               ? "h-12 w-full sm:w-44 cursor-not-allowed bg-emerald-600/10 text-emerald-500 border border-emerald-900/30"

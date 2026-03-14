@@ -3,6 +3,15 @@ const router = express.Router();
 
 const MentorRequestManager = require("../../businessLogic/managers/MentorRequestManager");
 const { getIO } = require("../../utils/socket");
+const fs = require('fs');
+const path = require('path');
+const logFile = path.join(__dirname, '../../../socket-debug.log');
+
+const log = (msg) => {
+  const time = new Date().toISOString();
+  fs.appendFileSync(logFile, `[${time}] ${msg}\n`);
+  console.log(msg);
+};
 
 const mentorRequestManager = new MentorRequestManager();
 
@@ -63,16 +72,32 @@ router.get("/pending-requests", async (req, res) => {
 router.post("/accept-request", async (req, res) => {
   try {
     const { request_id, mentor_id } = req.body;
+    log(`[API DEBUG] POST /accept-request - request_id: ${request_id}, mentor_id: ${mentor_id}`);
 
     const result = await mentorRequestManager.acceptRequest({
       request_id,
       mentor_id,
     });
+    log(`[API DEBUG] acceptRequest result: ${JSON.stringify(result)}`);
 
     const io = getIO();
 
-    // notify team leader that mentor accepted
-    io.emit("mentor-request-accepted", result);
+    // Fetch mentor name for better notification
+    const UserModel = require("../../models/AuthModel");
+    const userModel = new UserModel();
+    const mentor = await userModel.getById(mentor_id);
+    
+    const notificationData = {
+      ...result,
+      mentor_name: mentor ? mentor.name : "A Mentor"
+    };
+
+    // notify team leader that mentor accepted using team-specific room
+    const roomName = `team-${result.team_id}`;
+    const socketsInRoom = io.sockets.adapter.rooms.get(roomName);
+    log(`[SOCKET DEBUG] Emitting mentor-request-accepted to ${roomName}. Sockets in room: ${socketsInRoom ? Array.from(socketsInRoom).join(', ') : 'none'}`);
+    
+    io.to(roomName).emit("mentor-request-accepted", notificationData);
 
     res.json({
       success: true,

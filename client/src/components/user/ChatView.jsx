@@ -104,7 +104,7 @@ const MentorRequestButton = ({ onRequest, mentorOnline }) => {
     const end = Date.now() + COOLDOWN_DURATION * 1000;
     setCooldownEnd(end);
     localStorage.setItem(STORAGE_KEY, end.toString());
-    onRequest?.(); // notify parent (triggers mentor-accept notification)
+    onRequest?.(); // triggers actual backend request
   };
 
   // ── Button style variants ───────────────────────────────────────
@@ -229,7 +229,7 @@ const MentorNotification = ({ visible, onDismiss }) => {
 };
 
 /* ─── Main Chat View ─── */
-const ChatView = ({ hackathon, teamInfo, broadcasts = [] }) => {
+const ChatView = ({ hackathon, teamInfo, broadcasts = [], onRequestMentor }) => {
   // Combine mock messages with real broadcasts
   // Map real broadcasts to match MessageBubble format
   const realMessages = broadcasts.map(b => ({
@@ -241,22 +241,15 @@ const ChatView = ({ hackathon, teamInfo, broadcasts = [] }) => {
 
   const combinedMessages = [...allMessages, ...realMessages];
   
-  const [notificationVisible, setNotificationVisible] = useState(false);
-  const [mentorOnline] = useState(true);
+  const [repoModalOpen, setRepoModalOpen] = useState(false);
+  const [repoUrl, setRepoUrl] = useState(teamInfo?.project_link || "");
+
   const latestMsg = combinedMessages.length > 0 ? combinedMessages[combinedMessages.length - 1] : null;
   const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
-
-  // Called by MentorRequestButton when the user fires a request.
-  // Simulate mentor accepting after 3 s and fire the toast notification.
-  const handleMentorRequest = () => {
-    setTimeout(() => setNotificationVisible(true), 3000);
-  };
-  const [repoModalOpen, setRepoModalOpen] = useState(false);
-  const [repoUrl, setRepoUrl] = useState(teamInfo?.project_link || "");
+  }, [combinedMessages]);
 
   // Update repoUrl if teamInfo changes
   useEffect(() => {
@@ -381,8 +374,8 @@ const ChatView = ({ hackathon, teamInfo, broadcasts = [] }) => {
           </div>
 
           <MentorRequestButton
-            mentorOnline={mentorOnline}
-            onRequest={handleMentorRequest}
+            mentorOnline={true}
+            onRequest={onRequestMentor}
           />
         </div>
       </div>
@@ -416,10 +409,6 @@ const ChatView = ({ hackathon, teamInfo, broadcasts = [] }) => {
         </div>
       </div>
 
-      <MentorNotification
-        visible={notificationVisible}
-        onDismiss={() => setNotificationVisible(false)}
-      />
     </div>
   );
 };

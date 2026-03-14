@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Users } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import Navbar from '../components/user/Navbar';
 import HackathonCard from '../components/user/HackathonCard';
 import ChatView from '../components/user/ChatView';
@@ -129,26 +130,68 @@ const UserPage = () => {
   }, []);
 
 
+  const [socketStatus, setSocketStatus] = useState(socket.connected ? 'connected' : 'disconnected');
+
+  useEffect(() => {
+    const onConnect = () => setSocketStatus('connected');
+    const onDisconnect = () => setSocketStatus('disconnected');
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+    };
+  }, []);
+
   const openChat = (hackathon) => setActiveChat(hackathon);
   const closeChat = () => setActiveChat(null);
 
   useEffect(() => {
-    // In a real app, you'd join a room based on teamId
-    // For this demo, we'll just listen for any mentor joining
     socket.on('mentor-request-accepted', (data) => {
-      // data contains request info and room_id
+      console.log("[SOCKET DEBUG] 🎯 RECEIVED mentor-request-accepted:", data);
       setMentorNotification({
-        mentorName: "A Mentor", // Could be enhanced to include mentor name from backend
+        mentorName: data.mentor_name || "A Mentor",
         roomId: data.room_id,
         message: "Your request has been accepted. Join the meeting to discuss your project!"
       });
+      toast.success(`${data.mentor_name || "A Mentor"} has accepted your request!`, {
+        icon: '👨‍🏫',
+        duration: 5000
+      });
     });
 
-    return () => socket.off('mentor-request-accepted');
-  }, []);
+    socket.onAny((event, ...args) => {
+        console.log(`[SOCKET DEBUG] 📥 Received Event: ${event}`, args);
+    });
+
+    return () => {
+      socket.off('mentor-request-accepted');
+      socket.offAny();
+    };
+  }, [teamId]);
 
   useEffect(() => {
     if (teamId) {
+      const joinRoom = () => {
+        console.log(`[SOCKET DEBUG] 🔌 (Re)joining team room: team-${teamId}`);
+        socket.emit('join-team-room', teamId);
+      };
+
+      if (socket.connected) {
+        joinRoom();
+      }
+
+      socket.on('connect', joinRoom);
+      
+      // Secondary check: periodically emit join just in case
+      const interval = setInterval(() => {
+        if (socket.connected) {
+          socket.emit('join-team-room', teamId);
+        }
+      }, 10000);
+
       setIsLoadingTeam(true);
       fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/team/all-teams`)
         .then(res => res.json())
@@ -162,6 +205,11 @@ const UserPage = () => {
         })
         .catch(err => console.error(err))
         .finally(() => setIsLoadingTeam(false));
+
+      return () => {
+        socket.off('connect', joinRoom);
+        clearInterval(interval);
+      };
     }
   }, [teamId]);
 
@@ -198,14 +246,53 @@ const UserPage = () => {
   return (
     <>
       <div className="min-h-screen bg-[#090909] text-white font-sans">
+        <div className={`fixed top-0 right-0 z-[100] px-3 py-1 text-[10px] font-bold uppercase transition-colors ${socketStatus === 'connected' ? 'bg-green-600' : 'bg-red-600'}`}>
+            Socket: {socketStatus} {teamId && `| Team: ${teamId}`}
+        </div>
         <Navbar onBack={closeChat} showBack={!!activeChat} />
 
       {/* Main content shifted below navbar */}
       <div className="pt-20 min-h-screen flex flex-col">
+        
+        {/* Persistent Mentor Joined Notification */}
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-8 lg:px-16 mt-4">
+            {mentorNotification && (
+              <div className="bg-red-600/10 border border-red-600/40 p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500 shadow-xl shadow-red-950/20">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white shrink-0">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-white">{mentorNotification.mentorName} accepted!</h3>
+                    <p className="text-gray-400 text-sm">{mentorNotification.message}</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                    <button 
+                        onClick={handleJoinMeeting}
+                        className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-red-600/20 transition-all whitespace-nowrap"
+                    >
+                        Join Meeting Now
+                    </button>
+                    <button 
+                        onClick={() => setMentorNotification(null)}
+                        className="bg-[#111] border border-white/10 hover:border-white/20 text-gray-400 px-4 py-3 rounded-xl transition-all"
+                    >
+                        Dismiss
+                    </button>
+                </div>
+              </div>
+            )}
+        </div>
         {activeChat ? (
           /* ─── CHAT VIEW ─── */
           <div className="flex-1 flex flex-col h-[calc(100vh-5rem)]">
-            <ChatView hackathon={activeChat} teamInfo={teamInfo} broadcasts={broadcasts} />
+            <ChatView 
+                hackathon={activeChat} 
+                teamInfo={teamInfo} 
+                broadcasts={broadcasts} 
+                onRequestMentor={handleRequestMentor}
+            />
           </div>
         ) : (
           /* ─── DASHBOARD ─── */
@@ -238,26 +325,8 @@ const UserPage = () => {
             </div>
 
 
-            {/* Mentor Joined Notification */}
-            {mentorNotification && (
-              <div className="mb-10 bg-red-600/10 border border-red-600/40 p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white shrink-0">
-                    <Users className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-white">{mentorNotification.mentorName} joined!</h3>
-                    <p className="text-gray-400 text-sm">{mentorNotification.message}</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={handleJoinMeeting}
-                  className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-red-600/20 transition-all whitespace-nowrap"
-                >
-                  Join Meeting Now
-                </button>
-              </div>
-            )}
+
+            {/* Hero greeting */}
 
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">

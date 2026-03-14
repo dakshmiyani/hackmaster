@@ -2,9 +2,11 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Mic, MicOff, Video, VideoOff, PhoneOff, 
-  Users, Clock, Maximize2, Shield, Settings 
+  Users, Clock, Maximize2, Shield, Settings,
+  Monitor, MonitorOff
 } from 'lucide-react'
 import socket from '../utils/socket'
+import { useAuth } from '../context/AuthContext'
 import { Button } from '@/components/MentorComponents/button'
 import { Card } from '@/components/MentorComponents/card'
 import { Badge } from '@/components/MentorComponents/badge'
@@ -26,8 +28,11 @@ export default function CallPage() {
   // State
   const [isMuted, setIsMuted] = useState(false)
   const [isCameraOff, setIsCameraOff] = useState(false)
+  const [isSharingScreen, setIsSharingScreen] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
   const [duration, setDuration] = useState(0)
+  const [isMentor, setIsMentor] = useState(false)
+  const candidateQueue = useRef([])
 
   // Timer Effect
   useEffect(() => {
@@ -43,8 +48,15 @@ export default function CallPage() {
     return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
   }
 
+  const { user } = useAuth()
+
   // WebRTC Initialization
   useEffect(() => {
+    // Set role based on auth context
+    if (user) {
+        setIsMentor(user.role_id === 4)
+    }
+
     const initCall = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -57,30 +69,39 @@ export default function CallPage() {
         }
 
         // Join socket room
+        console.log('[CALL] Joining room:', roomId)
         socket.emit('join-room', roomId, socket.id)
 
         // WebRTC Signaling Handlers
         socket.on('user-connected', async (userId) => {
-          console.log('User connected:', userId)
-          setIsConnected(true)
+          console.log('[CALL] Peer connected, creating offer:', userId)
           await createOffer()
         })
 
         socket.on('offer', async (offer) => {
+          console.log('[CALL] Received offer')
           await handleOffer(offer)
         })
 
         socket.on('answer', async (answer) => {
-          await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer))
+          console.log('[CALL] Received answer')
+          if (pcRef.current) {
+            await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer))
+            processCandidateQueue()
+          }
         })
 
         socket.on('ice-candidate', async (candidate) => {
-          if (pcRef.current) {
+          console.log('[CALL] Received ICE candidate')
+          if (pcRef.current && pcRef.current.remoteDescription) {
             await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+          } else {
+            candidateQueue.current.push(candidate)
           }
         })
 
         socket.on('user-disconnected', () => {
+          console.log('[CALL] Peer disconnected')
           setIsConnected(false)
           if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null
         })
@@ -95,7 +116,10 @@ export default function CallPage() {
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop())
       }
-      if (pcRef.current) pcRef.current.close()
+      if (pcRef.current) {
+        pcRef.current.close()
+        pcRef.current = null
+      }
       socket.off('user-connected')
       socket.off('offer')
       socket.off('answer')
@@ -104,7 +128,15 @@ export default function CallPage() {
     }
   }, [roomId])
 
+  const processCandidateQueue = async () => {
+    while (candidateQueue.current.length > 0) {
+      const candidate = candidateQueue.current.shift()
+      await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+    }
+  }
+
   const setupPeerConnection = () => {
+    console.log('[CALL] Setting up PeerConnection')
     const pc = new RTCPeerConnection(ICE_SERVERS)
     
     localStreamRef.current.getTracks().forEach(track => {
@@ -112,6 +144,7 @@ export default function CallPage() {
     })
 
     pc.ontrack = (event) => {
+      console.log('[CALL] Received remote track')
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = event.streams[0]
       }
@@ -119,8 +152,18 @@ export default function CallPage() {
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log('[CALL] Sending ICE candidate')
         socket.emit('ice-candidate', { roomId, candidate: event.candidate })
       }
+    }
+
+    pc.onconnectionstatechange = () => {
+        console.log('[CALL] Connection state:', pc.connectionState)
+        if (pc.connectionState === 'connected') {
+            setIsConnected(true)
+        } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+            setIsConnected(false)
+        }
     }
 
     pcRef.current = pc
@@ -137,6 +180,7 @@ export default function CallPage() {
   const handleOffer = async (offer) => {
     const pc = setupPeerConnection()
     await pc.setRemoteDescription(new RTCSessionDescription(offer))
+    processCandidateQueue()
     const answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
     socket.emit('answer', { roomId, answer })
@@ -158,8 +202,61 @@ export default function CallPage() {
     }
   }
 
+  const toggleScreenShare = async () => {
+    try {
+      if (!isSharingScreen) {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true })
+        const screenTrack = screenStream.getVideoTracks()[0]
+
+        if (pcRef.current) {
+          const sender = pcRef.current.getSenders().find(s => s.track.kind === 'video')
+          if (sender) {
+            sender.replaceTrack(screenTrack)
+          }
+        }
+
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = screenStream
+        }
+
+        screenTrack.onended = () => stopScreenShare()
+        setIsSharingScreen(true)
+      } else {
+        stopScreenShare()
+      }
+    } catch (err) {
+      console.error('Error starting screen share:', err)
+    }
+  }
+
+  const stopScreenShare = async () => {
+    try {
+      const videoTrack = localStreamRef.current.getVideoTracks()[0]
+      if (pcRef.current) {
+        const sender = pcRef.current.getSenders().find(s => s.track.kind === 'video')
+        if (sender) {
+          sender.replaceTrack(videoTrack)
+        }
+      }
+
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = localStreamRef.current
+      }
+
+      setIsSharingScreen(false)
+    } catch (err) {
+      console.error('Error stopping screen share:', err)
+    }
+  }
+
   const endCall = () => {
-    navigate('/mentor')
+    if (user?.role_id === 4) {
+      navigate('/mentor')
+    } else if (user?.role_id === 5) {
+      navigate(user.team_id ? `/team-leader/${user.team_id}` : '/team-leader')
+    } else {
+      navigate('/')
+    }
   }
 
   return (
@@ -212,13 +309,15 @@ export default function CallPage() {
           />
           
           {!isConnected && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-20">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-20 px-8 text-center">
               <div className="relative mb-6">
                 <div className="absolute inset-0 bg-red-600/20 blur-3xl rounded-full"></div>
                 <Users className="w-20 h-20 text-red-600 relative animate-pulse" />
               </div>
-              <h2 className="text-xl font-bold mb-2">Waiting for Mentor</h2>
-              <p className="text-gray-500 text-sm">Signaling established. Connecting peer stream...</p>
+              <h2 className="text-xl font-bold mb-2">
+                {isMentor ? "Waiting for Team Leader" : "Waiting for Mentor"}
+              </h2>
+              <p className="text-gray-500 text-sm max-w-xs">Connecting to secure peer-to-peer session. Please ensure your camera and microphone are enabled.</p>
             </div>
           )}
 
@@ -289,6 +388,22 @@ export default function CallPage() {
             {isCameraOff ? <VideoOff className="w-6 h-6" /> : <Video className="w-6 h-6" />}
           </Button>
           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Camera</span>
+        </div>
+
+        <div className="flex flex-col items-center gap-2">
+          <Button 
+            onClick={toggleScreenShare}
+            variant="outline" 
+            size="icon" 
+            className={`h-14 w-14 rounded-2xl transition-all duration-300 ${
+              isSharingScreen 
+              ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/20' 
+              : 'bg-[#111] border-white/10 text-gray-400 hover:border-red-600/50'
+            }`}
+          >
+            {isSharingScreen ? <MonitorOff className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
+          </Button>
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Screen</span>
         </div>
 
         <div className="mx-4 h-12 w-px bg-white/5 hidden sm:block"></div>
