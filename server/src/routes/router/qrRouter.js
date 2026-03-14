@@ -134,4 +134,75 @@ router.post('/stats', async (req, res) => {
   }
 });
 
+// ✅ Get ALL QR codes with their image URLs (+ optional event_id filter)
+router.get('/all', async (req, res) => {
+  try {
+    const userId = res.locals?.USER_INFO?.user?.user_id || null;
+    const { event_id } = req.query;
+
+    const qrModel = new QrModel(userId);
+    const db = await qrModel.getQueryBuilder();
+
+    let query = db('qrs')
+      .leftJoin('members', 'qrs.member_id', 'members.member_id')
+      .select(
+        'qrs.qr_id',
+        'qrs.qr_code',
+        'qrs.qr_url',
+        'qrs.member_id',
+        'members.name as member_name',
+        'members.email as member_email',
+        'members.event_id'
+      )
+      .orderBy('qrs.qr_id', 'asc');
+
+    // Optional: filter by event
+    if (event_id) {
+      query = query.where('members.event_id', event_id);
+    }
+
+    const qrs = await query;
+
+    return res.json({
+      success: true,
+      count: qrs.length,
+      data: qrs,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// ✅ Get QR for a specific member
+router.get('/by-member/:member_id', async (req, res) => {
+  try {
+    const { member_id } = req.params;
+    const userId = res.locals?.USER_INFO?.user?.user_id || null;
+
+    const qrModel = new QrModel(userId);
+    const qr = await qrModel.findByMemberId(member_id);
+
+    if (!qr) {
+      return res.status(404).json({
+        success: false,
+        message: 'No QR found for this member',
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: qr,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;
