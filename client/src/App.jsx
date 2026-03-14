@@ -39,7 +39,7 @@
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin/leaderboard-selection" element={<LeaderboardSelection />} />
             <Route path="/admin/leaderboard" element={<LeaderboardView />} />
-            <Route path="/admin/leaderboard/:hackathonId" element={<LeaderboardView />} />
+            <Route path="/admin/leaderboard/:domain" element={<LeaderboardView />} />
             <Route path="/admin/register" element={<RegisterTeam />} />
             <Route path="/admin/github-analytics" element={<GithubAnalyticsDashboard />} />
           </Routes>

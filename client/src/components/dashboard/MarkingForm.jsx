@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { IoClose, IoCalculatorOutline } from "react-icons/io5";
 import { toast } from 'react-hot-toast';
 
@@ -56,15 +57,30 @@ const MarkingForm = ({ team, eventType, initialMarks, onClose, onSave }) => {
 
     const totalScore = Object.values(marks).reduce((a, b) => a + b, 0);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
-        setTimeout(() => {
-            toast.success("Score submitted successfully!");
-            onSave({ teamId: team.teamId, totalScore });
-            onClose();
+        try {
+            const response = await axios.post("http://localhost:3000/open/api/score/submit", {
+                team_id: team.teamId,
+                domain: eventType,
+                total_score: totalScore,
+                breakdown: marks
+            });
+            
+            if (response.data.success) {
+                toast.success("Score submitted successfully!");
+                onSave({ teamId: team.teamId, totalScore });
+                onClose();
+            } else {
+                toast.error(response.data.message || "Failed to submit score");
+            }
+        } catch (error) {
+            console.error("Score submission error:", error);
+            toast.error("Error connecting to scoring service");
+        } finally {
             setIsSubmitting(false);
-        }, 1000);
+        }
     };
 
     return (

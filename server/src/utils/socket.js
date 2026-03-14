@@ -40,6 +40,8 @@ const initSocket = (server) => {
     });
 
   });
+
+  return io;
 };
 
 // Export getIO so router can use it

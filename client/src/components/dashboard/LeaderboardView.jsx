@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import axios from 'axios';
+import socket from '../../utils/socket';
 import { mockLeaderboardData } from '../../data/mockData';
 
 export default function LeaderboardView() {
@@ -12,15 +14,43 @@ export default function LeaderboardView() {
     const domainTitle = domain === 'web' ? 'WEB DEVELOPMENT' : 'AI / ML';
 
     useEffect(() => {
-        setIsLoading(true);
-        // Simulate loading
-        const timer = setTimeout(() => {
-            const data = domain === 'web' ? mockLeaderboardData.web : mockLeaderboardData.aiml;
-            setLeaderboardData(data || []);
-            setIsLoading(false);
-        }, 1500);
+        const fetchLeaderboard = async () => {
+            setIsLoading(true);
+            try {
+                // Map frontend domain param to backend expected domain names
+                const domainMap = {
+                    'web': 'WEB',
+                    'aiml': 'AI/ML'
+                };
+                const targetDomain = domainMap[domain] || domain;
+                const response = await axios.get(`http://localhost:3000/open/api/score/leaderboard/${targetDomain}`);
+                if (response.data.success) {
+                    setLeaderboardData(response.data.data);
+                }
+            } catch (error) {
+                console.error("Error fetching leaderboard:", error);
+                toast.error("Failed to load leaderboard");
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-        return () => clearTimeout(timer);
+        fetchLeaderboard();
+
+        // Listen for live updates
+        socket.on("leaderboardUpdate", (payload) => {
+            const domainMap = {
+                'web': 'WEB',
+                'aiml': 'AI/ML'
+            };
+            if (payload.domain === domainMap[domain] || payload.domain === domain) {
+                fetchLeaderboard();
+            }
+        });
+
+        return () => {
+            socket.off("leaderboardUpdate");
+        };
     }, [domain]);
 
     const handleExport = () => {

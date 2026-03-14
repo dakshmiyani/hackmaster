@@ -14,11 +14,32 @@ const JudgePage = () => {
 
     useEffect(() => {
         setIsLoading(true);
-        const timer = setTimeout(() => {
-            setTeams(mockJudgeTeams[selectedEvent] || []);
-            setIsLoading(false);
-        }, 1500);
-        return () => clearTimeout(timer);
+        const fetchTeams = async () => {
+            try {
+                // Fetch all teams and filter by selected domain (WEB or AI/ML)
+                const response = await fetch("http://localhost:3000/open/api/team/all-teams");
+                const data = await response.json();
+                if (data.success) {
+                    // Map domain to event_name
+                    const eventNameMap = {
+                        'WEB': 'HACKATHON',
+                        'AI/ML': 'Designathon'
+                    };
+                    const filtered = data.data.filter(t => t.event_name === eventNameMap[selectedEvent]);
+                    const mappedTeams = filtered.map(t => ({
+                        teamId: String(t.team_id),
+                        teamName: t.name,
+                        members: t.members || []
+                    }));
+                    setTeams(mappedTeams);
+                }
+            } catch (error) {
+                console.error("Error fetching teams:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchTeams();
     }, [selectedEvent]);
 
     const filteredTeams = teams.filter(team =>

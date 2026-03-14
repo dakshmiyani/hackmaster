@@ -8,6 +8,7 @@ const AuthModel = require("../../models/AuthModel");
 const GithubAnalyticsRouter = require("../router/gitHubAnalyticsRouter");
 const mentorRouter = require('../router/MentorRequestRouter');
 const plagiarismRouter = require("../router/plagiarismRouter");
+const ScoreRouter = require("../router/ScoreRouter");
 
 const Router = express.Router();
 const openrouter = express.Router();
@@ -26,7 +27,9 @@ class RouteMap {
     openrouter.use("/organization", organizationRouter);
     openrouter.use("/team", Teamrouter);
     openrouter.use("/member", memberRouter);
+    openrouter.use("/member", memberRouter);
     openrouter.use("/qr", qrRouter);
+    openrouter.use("/score", ScoreRouter);
     openrouter.use("/github", GithubAnalyticsRouter);
     openrouter.use("/mentor", mentorRouter);
     openrouter.use("/plagiarism", plagiarismRouter);

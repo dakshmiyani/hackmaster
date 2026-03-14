@@ -76,7 +76,8 @@ app.use(function (_req, _res, next) {
 });
 
 const server = http.createServer(app);
-initSocket(server); // 🔌 init socket
+const io = initSocket(server); // 🔌 init socket
+app.set("socketio", io);
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
