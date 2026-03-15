@@ -162,6 +162,8 @@ class PlagiarismManager {
               distinctivePaths.add(fileName);
             }
           }
+
+          
         } else {
           console.log(`  [FP] Fetch error: ${res.reason?.message}`);
         }

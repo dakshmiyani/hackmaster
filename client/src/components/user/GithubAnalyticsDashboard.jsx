@@ -77,6 +77,7 @@ export default function GithubAnalyticsDashboard({ repoUrl: propRepoUrl }) {
   const handlePlagiarismCheck = async () => {
     setPlagiarismLoading(true);
     setPlagiarismError(null);
+    
     try {
       const res = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/plagiarism/check`, {
          repoUrl: repoUrl || 'https://github.com/dakshmiyani/hackmaster.git'
