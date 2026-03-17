@@ -74,23 +74,58 @@ export default function GithubAnalyticsDashboard({ repoUrl: propRepoUrl }) {
     fetchData();
   }, [repoUrl]);
 
+  const pollPlagiarismJob = async (jobId) => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/plagiarism/job/${jobId}`);
+        const { status, result, failedReason } = res.data;
+
+        if (status === 'completed' && result) {
+          clearInterval(interval);
+          setPlagiarismLoading(false);
+          // Map backend report fields to frontend expected state
+          const report = result.report;
+          setPlagiarismData({
+            authenticityScore: report.uniquenessScore,
+            status: report.verdict,
+            details: report.topMatch 
+              ? `Significant similarity (${report.topMatch.similarity}%) found with ${report.topMatch.repository}. ${report.topMatch.matchedLineCount} exact lines matched.`
+              : "No significant traces of copied boilerplate code were found across major codebases. The repository structure appears moderately unique."
+          });
+        } else if (status === 'failed') {
+          clearInterval(interval);
+          setPlagiarismLoading(false);
+          setPlagiarismError(failedReason || 'Job failed on server');
+        }
+        // If status is 'active', 'waiting', or 'delayed', keep polling
+      } catch (err) {
+        console.error("Polling error:", err);
+        clearInterval(interval);
+        setPlagiarismLoading(false);
+        setPlagiarismError('Error while polling for results');
+      }
+    }, 3000); // Poll every 3 seconds
+  };
+
   const handlePlagiarismCheck = async () => {
     setPlagiarismLoading(true);
     setPlagiarismError(null);
+    setPlagiarismData(null);
     
     try {
       const res = await axios.post(`${import.meta.env.VITE_BACKEND_BASE_URL}/open/api/plagiarism/check`, {
          repoUrl: repoUrl || 'https://github.com/dakshmiyani/hackmaster.git'
       });
-      if (res.data.success) {
-        setPlagiarismData(res.data.data);
+      if (res.data.success && res.data.jobId) {
+        // Start polling for job results
+        pollPlagiarismJob(res.data.jobId);
       } else {
-        setPlagiarismError(res.data.message || 'Failed to analyze plagiarism');
+        setPlagiarismError(res.data.message || 'Failed to start analysis');
+        setPlagiarismLoading(false);
       }
     } catch(err) {
-      console.error(err);
+      console.error("Plagiarism check error:", err);
       setPlagiarismError('Error connecting to plagiarism service');
-    } finally {
       setPlagiarismLoading(false);
     }
   };
@@ -159,18 +194,23 @@ export default function GithubAnalyticsDashboard({ repoUrl: propRepoUrl }) {
              <h3 className="text-xl font-bold text-white mb-4 border-b border-white/10 pb-2">Plagiarism Report</h3>
              <div className="flex items-center gap-6">
                 <div className="flex-1">
-                   <p className="text-gray-400 text-sm mb-1">Authenticity Score</p>
-                   {/* We assume the plagiarism API returns { authenticityScore: number, status: string, details: string } */}
+                   <p className="text-gray-400 text-sm mb-1 uppercase tracking-wider font-bold">Uniqueness</p>
                    <div className="flex items-end gap-3">
-                     <h2 className={`text-4xl font-extrabold ${
-                        (plagiarismData.authenticityScore || 100) > 80 ? 'text-emerald-500' : 'text-red-500'
-                     }`}>
+                     <h2 className="text-4xl font-extrabold text-emerald-500">
                         {plagiarismData.authenticityScore || 100}%
                      </h2>
                    </div>
                 </div>
+                <div className="flex-1 border-l border-white/10 pl-6">
+                   <p className="text-gray-400 text-sm mb-1 uppercase tracking-wider font-bold">Plagiarism</p>
+                   <div className="flex items-end gap-3">
+                     <h2 className="text-4xl font-extrabold text-red-600">
+                        {100 - (plagiarismData.authenticityScore || 100)}%
+                     </h2>
+                   </div>
+                </div>
                 <div className="flex-1 border-l border-white/10 pl-6 border-r pr-6">
-                   <p className="text-gray-400 text-sm mb-1">Status</p>
+                   <p className="text-gray-400 text-sm mb-1 uppercase tracking-wider font-bold">Status</p>
                    <p className="text-lg text-white font-medium">{plagiarismData.status || "Clean"}</p>
                 </div>
                 <div className="flex-[2] pl-6 text-sm text-gray-400">
